@@ -1,0 +1,28 @@
+syntax = "proto3";
+package shared.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+extend google.protobuf.MethodOptions {
+  // Whether to skip authentication for this RPC method.
+  // Set to true on public endpoints that do not require any form of
+  // authentication (e.g. login, register, refresh token, client config).
+  bool skip_auth = 50001;
+
+  // Whether this RPC is restricted to Agent tokens (nxa_ prefix) only.
+  // Requests with non-Agent identity are rejected with PERMISSION_DENIED.
+  bool agent_only = 50003;
+
+  // Whether this RPC is restricted to User tokens (nxs_ prefix) only.
+  // Requests with non-User identity are rejected with PERMISSION_DENIED.
+  bool user_only = 50004;
+}
+
+extend google.protobuf.FieldOptions {
+  // Whether this field contains sensitive data (passwords, tokens, etc.)
+  // that should be redacted in logs. The logging interceptor replaces
+  // the field value with "***" when serializing request/response.
+  bool sensitive = 50002;
+}

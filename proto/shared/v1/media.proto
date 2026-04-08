@@ -1,0 +1,43 @@
+syntax = "proto3";
+package shared.v1;
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// MediaPurpose defines the intended usage of an uploaded file, which
+// determines storage visibility and URL generation strategy.
+enum MediaPurpose {
+  // Unspecified.
+  MEDIA_PURPOSE_UNSPECIFIED = 0;
+  // User avatar (public, permanent URL).
+  MEDIA_PURPOSE_AVATAR = 1;
+  // Group avatar (public, permanent URL).
+  MEDIA_PURPOSE_GROUP_AVATAR = 2;
+  // Message attachment (private, time-limited URL with conversation-level
+  // access control).
+  MEDIA_PURPOSE_MESSAGE = 3;
+}
+
+// MediaFileInfo contains file metadata returned after upload completion.
+message MediaFileInfo {
+  // Unique file ID.
+  string file_id = 1;
+  // Original file name.
+  string file_name = 2;
+  // MIME content type.
+  string content_type = 3;
+  // File size in bytes.
+  int64 size = 4;
+  // File checksum (SHA256).
+  string checksum = 5;
+  // Image/video width in pixels (0 if not applicable).
+  int32 width = 6;
+  // Image/video height in pixels (0 if not applicable).
+  int32 height = 7;
+  // Audio/video duration in milliseconds (0 if not applicable).
+  int64 duration_ms = 8;
+  // Thumbnail file ID (empty if not generated).
+  string thumbnail_file_id = 9;
+  // Permanent public URL. Only populated when purpose is AVATAR or
+  // GROUP_AVATAR. Empty for MESSAGE purpose files.
+  string public_url = 10;
+}

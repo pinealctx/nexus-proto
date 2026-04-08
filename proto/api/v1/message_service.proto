@@ -1,0 +1,413 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/message.proto";
+import "shared/v1/options.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// MessageService handles message sending, editing, deletion, recall,
+// forwarding, and history retrieval. Authenticated via Access Token.
+//
+// All message operations are performed via Connect RPC (HTTP).
+// The long connection (WebSocket) is used exclusively for server-side
+// push delivery (new messages, status updates, etc.).
+service MessageService {
+  // SendMessage sends a message to a conversation.
+  //
+  // Side effects:
+  //   - Persists the message and assigns a server message_id.
+  //   - Pushes an Update to all online conversation participants
+  //     via their long connections.
+  //   - Triggers offline push notifications for offline participants.
+  //   - Updates the conversation's last_message_time and last_message_id.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Conversation does not exist.
+  //   - PERMISSION_DENIED: User is not a member of the conversation,
+  //     or the conversation is muted for this user (group mute).
+  //   - FAILED_PRECONDITION: Conversation is a PRIVATE chat where the
+  //     contact relationship has been removed.
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+
+  // EditMessage edits a previously sent message.
+  //
+  // Side effects:
+  //   - Updates the message content and sets updated_at timestamp.
+  //   - Pushes an Update with the edited message to all online
+  //     conversation participants.
+  //   - Triggers webhook delivery for agent members.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Message does not exist.
+  //   - PERMISSION_DENIED: User is not the message sender.
+  //   - FAILED_PRECONDITION: Message has been recalled.
+  //   - FAILED_PRECONDITION: Message was sent more than 24 hours ago.
+  //   - INVALID_ARGUMENT: new_body.type differs from the original
+  //     message type (type changes are not allowed).
+  rpc EditMessage(EditMessageRequest) returns (EditMessageResponse);
+
+  // DeleteMessages deletes messages by ID list for the current user only
+  // (local delete). Other participants are not affected.
+  //
+  // Side effects:
+  //   - Marks the specified messages as deleted for the current user.
+  //   - Deleted messages are excluded from future GetMessageHistory
+  //     responses for this user.
+  //   - Delivers a MessageDeletedEvent to the caller's own update stream
+  //     (multi-device sync).
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Conversation does not exist.
+  //   - PERMISSION_DENIED: User is not a member of the conversation.
+  rpc DeleteMessages(DeleteMessagesRequest) returns (DeleteMessagesResponse);
+
+  // DeleteHistory deletes all messages up to a given message ID for the
+  // current user only (local delete).
+  //
+  // Side effects:
+  //   - Marks all messages with message_id <= up_to_message_id as deleted
+  //     for the current user.
+  //   - Delivers a MessageDeletedEvent to the caller's own update stream
+  //     (multi-device sync).
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Conversation does not exist.
+  //   - PERMISSION_DENIED: User is not a member of the conversation.
+  rpc DeleteHistory(DeleteHistoryRequest) returns (DeleteHistoryResponse);
+
+  // RecallMessage recalls a sent message (visible to all participants).
+  // The original message content is replaced with a MessageRecalledContent
+  // message in the conversation timeline.
+  //
+  // Side effects:
+  //   - Replaces the message body with RecalledContent (body.type
+  //     becomes MESSAGE_TYPE_RECALLED).
+  //   - Pushes an Update with the recalled message to all online
+  //     conversation participants.
+  //   - Triggers webhook delivery for agent members.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Message does not exist.
+  //   - PERMISSION_DENIED: User is not the message sender.
+  //   - FAILED_PRECONDITION: Message was sent more than 24 hours ago.
+  //   - FAILED_PRECONDITION: Message is already recalled.
+  rpc RecallMessage(RecallMessageRequest) returns (RecallMessageResponse);
+
+  // GetMessage returns a single message by ID.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Message does not exist or has been deleted by this user.
+  //   - PERMISSION_DENIED: User is not a member of the conversation.
+  rpc GetMessage(GetMessageRequest) returns (GetMessageResponse);
+
+  // GetMessageHistory returns message history with ID-based cursor
+  // pagination. Supports both backward (older) and forward (newer)
+  // pagination directions.
+  //
+  // Pagination:
+  //   - Backward (load older): set before_message_id. Returns messages
+  //     with message_id < before_message_id, ordered descending.
+  //     When has_more=true, use the smallest message_id in the response
+  //     as the next before_message_id.
+  //   - Forward (incremental pull): set after_message_id. Returns
+  //     messages with message_id > after_message_id, ordered ascending.
+  //     When has_more=true, use the largest message_id in the response
+  //     as the next after_message_id.
+  //   - Omit both for the latest messages (equivalent to backward from
+  //     the conversation's last_message_id).
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Conversation does not exist.
+  //   - PERMISSION_DENIED: User is not a member of the conversation.
+  rpc GetMessageHistory(GetMessageHistoryRequest) returns (GetMessageHistoryResponse);
+
+  // SubmitCardAction reports an Adaptive Card Action.Submit to the
+  // server. The server forwards the action data to the agent that sent
+  // the card message.
+  //
+  // Side effects:
+  //   - Delivers a CardActionPayload event to the agent via webhook.
+  //   - The agent may respond via AnswerCardAction (toast/alert) and
+  //     optionally update the card via EditMessage.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Message does not exist.
+  //   - PERMISSION_DENIED: User is not a member of the conversation.
+  //   - FAILED_PRECONDITION: Message is not a CARD type message.
+  rpc SubmitCardAction(SubmitCardActionRequest) returns (SubmitCardActionResponse);
+
+  // ── Agent streaming (agent_only) ──
+
+  // PushStreamDelta pushes an incremental delta to a streaming message.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Streaming message does not exist.
+  //   - FAILED_PRECONDITION: Stream has already ended or errored.
+  rpc PushStreamDelta(PushStreamDeltaRequest) returns (PushStreamDeltaResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+
+  // EndStream finalizes a streaming message with the accumulated content.
+  //
+  // Side effects:
+  //   - Persists the final accumulated text as the message content.
+  //   - Pushes StreamContent(phase=END) to online participants.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Streaming message does not exist.
+  //   - FAILED_PRECONDITION: Stream has already ended or errored.
+  rpc EndStream(EndStreamRequest) returns (EndStreamResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+
+  // ErrorStream terminates a streaming message with an error.
+  //
+  // Side effects:
+  //   - Persists the error state and partial content.
+  //   - Pushes StreamContent(phase=ERROR) to online participants.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Streaming message does not exist.
+  //   - FAILED_PRECONDITION: Stream has already ended or errored.
+  rpc ErrorStream(ErrorStreamRequest) returns (ErrorStreamResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+
+  // ── Agent callback (agent_only) ──
+
+  // AnswerCardAction responds to a card action submission.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Card action does not exist or has expired.
+  rpc AnswerCardAction(AnswerCardActionRequest) returns (AnswerCardActionResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+}
+
+// ── Send ──
+
+// SendMessageRequest sends a message to a conversation.
+message SendMessageRequest {
+  // Client-generated message ID (for idempotency and dedup).
+  int64 client_message_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Target conversation ID.
+  int64 conversation_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Message body.
+  shared.v1.MessageBody body = 3 [(buf.validate.field).required = true];
+  // Message ID to reply to (optional).
+  optional int64 reply_to_message_id = 4;
+}
+
+// SendMessageResponse is returned after the message is persisted.
+message SendMessageResponse {
+  // Server-assigned message ID.
+  int64 message_id = 1;
+  // Message creation time (Unix ms).
+  int64 created_at = 2;
+}
+
+// ── Edit ──
+
+// EditMessageRequest edits a previously sent message.
+message EditMessageRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID to edit.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // New message body.
+  shared.v1.MessageBody new_body = 3 [(buf.validate.field).required = true];
+}
+
+// EditMessageResponse is returned after the message is edited.
+message EditMessageResponse {
+  // Last content modification time (Unix ms).
+  int64 updated_at = 1;
+}
+
+// ── Delete ──
+
+// DeleteMessagesRequest deletes messages by ID list (local delete).
+message DeleteMessagesRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message IDs to delete.
+  repeated int64 message_ids = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 200
+  }];
+}
+
+// DeleteMessagesResponse is returned after messages are deleted.
+message DeleteMessagesResponse {
+  // Number of messages actually deleted.
+  int32 deleted_count = 1;
+}
+
+// DeleteHistoryRequest deletes all messages up to a given ID (local delete).
+message DeleteHistoryRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Delete up to and including this message ID.
+  int64 up_to_message_id = 2 [(buf.validate.field).int64.gt = 0];
+}
+
+// DeleteHistoryResponse is returned after history is deleted.
+message DeleteHistoryResponse {}
+
+// ── Recall ──
+
+// RecallMessageRequest recalls a sent message.
+message RecallMessageRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID to recall.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+}
+
+// RecallMessageResponse is returned after the message is recalled.
+message RecallMessageResponse {}
+
+// ── Get ──
+
+// GetMessageRequest requests a single message by ID.
+message GetMessageRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+}
+
+// GetMessageResponse contains the requested message.
+message GetMessageResponse {
+  // Message envelope.
+  shared.v1.MessageEnvelope message = 1;
+}
+
+// ── History ──
+
+// GetMessageHistoryRequest requests message history with ID-based cursor.
+// Set before_message_id for backward (older) pagination, or
+// after_message_id for forward (newer/incremental) pagination.
+// Omit both to start from the latest messages.
+message GetMessageHistoryRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Backward cursor: return messages with message_id < this value.
+  // When has_more=true, use the smallest message_id from the response.
+  optional int64 before_message_id = 2;
+  // Forward cursor: return messages with message_id > this value.
+  // When has_more=true, use the largest message_id from the response.
+  optional int64 after_message_id = 3;
+  // Maximum number of messages to return (default: 50, max: 200).
+  int32 limit = 4 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 200
+  }];
+}
+
+// GetMessageHistoryResponse contains the message history page.
+message GetMessageHistoryResponse {
+  // Messages in the requested range.
+  repeated shared.v1.MessageEnvelope messages = 1;
+  // Whether there are more messages beyond this page.
+  bool has_more = 2;
+  // Related user info referenced by the messages in this page.
+  // Contains UserInfo for each distinct sender_id (and reply_to.sender_id)
+  // appearing in the messages. Clients should merge these into their
+  // local users_cache for rendering sender names and avatars.
+  repeated shared.v1.UserInfo related_users = 3;
+}
+
+// ── Card action ──
+
+// SubmitCardActionRequest reports an Adaptive Card Action.Submit.
+message SubmitCardActionRequest {
+  // Conversation ID containing the card message.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID of the card message.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Action data from Action.Submit (JSON string, ≤ 4 KB).
+  // Contains the form input values and any static data defined
+  // in the Action.Submit's data property.
+  string action_data = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 4096
+  }];
+  // Action verb identifier (optional). Maps to the Action.Submit's
+  // "id" or custom "verb" property, allowing agents to distinguish
+  // between multiple submit actions on the same card.
+  string verb = 4 [(buf.validate.field).string.max_len = 128];
+}
+
+// SubmitCardActionResponse is returned after the action is submitted.
+message SubmitCardActionResponse {
+  // Server-assigned action ID.
+  string action_id = 1;
+}
+
+// ── Agent streaming messages ──
+
+// PushStreamDeltaRequest pushes an incremental delta to a streaming message.
+message PushStreamDeltaRequest {
+  // Conversation ID containing the streaming message.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID of the streaming message (from SendMessageResponse).
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Stream sequence number (agent-side auto-increment, starting from 1).
+  // Server uses this for dedup and gap detection.
+  int32 seq = 3 [(buf.validate.field).int32.gt = 0];
+  // Incremental text fragment.
+  string delta = 4 [(buf.validate.field).string.min_len = 1];
+}
+
+// PushStreamDeltaResponse is returned after the delta is pushed.
+message PushStreamDeltaResponse {}
+
+// EndStreamRequest finalizes a streaming message.
+message EndStreamRequest {
+  // Conversation ID containing the streaming message.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID of the streaming message.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Final accumulated text content.
+  string accumulated_text = 3;
+  // Rich text entities for the accumulated text (@mentions, URLs, etc.).
+  repeated shared.v1.MessageEntity entities = 4;
+}
+
+// EndStreamResponse is returned after the stream is finalized.
+message EndStreamResponse {}
+
+// ErrorStreamRequest terminates a streaming message with an error.
+message ErrorStreamRequest {
+  // Conversation ID containing the streaming message.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID of the streaming message.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Error message.
+  string error_message = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 1000
+  }];
+}
+
+// ErrorStreamResponse is returned after the stream is terminated.
+message ErrorStreamResponse {}
+
+// ── Agent card action response ──
+
+// AnswerCardActionRequest responds to a card action submission.
+message AnswerCardActionRequest {
+  // Action ID from the webhook event.
+  string action_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Response text to display.
+  optional string text = 2 [(buf.validate.field).string.max_len = 200];
+  // Whether to show as alert dialog (otherwise toast).
+  bool show_alert = 3;
+}
+
+// AnswerCardActionResponse is returned after the action is answered.
+message AnswerCardActionResponse {}

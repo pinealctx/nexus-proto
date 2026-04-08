@@ -1,0 +1,261 @@
+syntax = "proto3";
+package shared.v1;
+
+import "shared/v1/agent.proto";
+import "shared/v1/contact.proto";
+import "shared/v1/conversation.proto";
+import "shared/v1/message.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// SnUpdate is a sequenced update delivered to a user's update stream.
+// Each update carries a monotonically increasing sn. Clients detect
+// gaps by comparing received sn with local_sn + 1.
+message SnUpdate {
+  // Sequence number in the user's update stream.
+  int32 sn = 1;
+  // Update payload. Exactly one field is set.
+  oneof update {
+    // New or edited message.
+    MessageEnvelope message_envelope = 2;
+    // A friend request was received.
+    FriendRequestReceivedEvent friend_request_received = 3;
+    // A friend request was accepted.
+    FriendRequestAcceptedEvent friend_request_accepted = 4;
+    // A friend request was rejected.
+    FriendRequestRejectedEvent friend_request_rejected = 5;
+    // A contact was deleted (unfriended).
+    ContactDeletedEvent contact_deleted = 6;
+    // A user was blocked or unblocked.
+    UserBlockToggledEvent user_block_toggled = 7;
+    // A user's profile was updated.
+    UserProfileUpdatedEvent user_profile_updated = 8;
+    // A conversation action was performed (mute, unmute, delete).
+    ConversationActionEvent conversation_action = 9;
+    // A read receipt update for multi-device sync.
+    ReadReceiptEvent read_receipt = 10;
+    // An agent's status changed (deleted).
+    AgentStatusChangedEvent agent_status_changed = 11;
+    // A friend request was sent by the current user (multi-device sync).
+    FriendRequestSentEvent friend_request_sent = 12;
+    // A contact alias was updated (multi-device sync).
+    ContactAliasUpdatedEvent contact_alias_updated = 13;
+    // A username was changed.
+    UsernameChangedEvent username_changed = 14;
+    // A member (user or agent) was removed from a group by the owner.
+    RemovedFromGroupEvent removed_from_group = 17;
+    // Field 15 was KickedFromGroupEvent (removed, unified into RemovedFromGroupEvent).
+    // A group was dissolved by its owner.
+    GroupDissolvedEvent group_dissolved = 16;
+    // Messages were deleted locally (multi-device sync).
+    MessageDeletedEvent message_deleted = 18;
+    // A contact was added directly (agent via AddContact).
+    ContactAddedEvent contact_added = 19;
+  }
+}
+
+// NonSnUpdate is a non-sequenced, ephemeral update pushed in real time.
+// Clients do not track sn for these.
+message NonSnUpdate {
+  // Update payload.
+  oneof update {
+    // Streaming message delta (real-time push only).
+    MessageEnvelope message_envelope = 1;
+    // Card action answer (toast/alert from agent, ephemeral).
+    CardActionAnswer card_action_answer = 2;
+  }
+}
+
+// CardActionAnswer carries the agent's response to a card action.
+// Pushed as NonSnUpdate to the user who submitted the action.
+message CardActionAnswer {
+  // Action ID.
+  string action_id = 1;
+  // Response text to display.
+  string text = 2;
+  // Whether to show as alert dialog (true) or toast (false).
+  bool show_alert = 3;
+}
+
+// UpdateState holds the server's current sync state for a user.
+message UpdateState {
+  // The latest sn in the user's update stream.
+  int32 latest_sn = 1;
+}
+
+// ── Contact / friend event payloads ──
+
+// FriendRequestReceivedEvent is produced when a friend request is sent.
+// Delivered as an SnUpdate to the target user's update stream.
+// User info for from_user_id is provided via related_users in the
+// Update wrapper.
+message FriendRequestReceivedEvent {
+  // The friend request details.
+  PendingRequestItem request = 1;
+}
+
+// FriendRequestAcceptedEvent is produced when a friend request is accepted.
+// Delivered as an SnUpdate to both parties' update stream.
+// User info for the peer is provided via related_users in the
+// Update wrapper.
+message FriendRequestAcceptedEvent {
+  // The original friend request details.
+  PendingRequestItem request = 1;
+}
+
+// FriendRequestRejectedEvent is produced when a friend request is rejected.
+// Delivered as an SnUpdate to both parties' update stream.
+message FriendRequestRejectedEvent {
+  // Friend request ID.
+  int64 request_id = 1;
+  // User ID of the rejector.
+  int32 rejector_id = 2;
+}
+
+// FriendRequestSentEvent is produced when the current user sends a friend
+// request. Delivered to the sender's own update stream (multi-device sync).
+message FriendRequestSentEvent {
+  // Friend request ID.
+  int64 request_id = 1;
+  // Target user ID.
+  int32 target_user_id = 2;
+}
+
+// ContactAliasUpdatedEvent is produced when a contact alias is changed.
+// Delivered as an SnUpdate to the caller's own update stream only
+// (multi-device sync).
+message ContactAliasUpdatedEvent {
+  // Contact user ID whose alias was changed.
+  int32 contact_user_id = 1;
+  // New alias value. Empty means alias was cleared.
+  string new_alias = 2;
+}
+
+// UsernameChangedEvent is produced when a user sets their username.
+// Delivered as an SnUpdate to the user's own update stream only
+// (multi-device sync). Contacts learn the new username on demand.
+message UsernameChangedEvent {
+  // User ID whose username changed.
+  int32 user_id = 1;
+  // New username.
+  string new_username = 2;
+}
+
+// ContactDeletedEvent is produced when a contact is removed.
+// Single-sided: delivered as an SnUpdate to the caller's own update stream
+// only (multi-device sync). The other party is NOT notified.
+message ContactDeletedEvent {
+  // User ID of the removed contact.
+  int32 peer_user_id = 1;
+}
+
+// ContactAddedEvent is produced when a user adds an agent as a contact
+// via AddContact. Delivered to the caller's own update stream (multi-device sync).
+message ContactAddedEvent {
+  // User ID of the added agent.
+  int32 peer_user_id = 1;
+}
+
+// ── User event payloads ──
+
+// UserBlockToggledEvent is produced when a user blocks or unblocks another.
+// Delivered as an SnUpdate to the operator's own update stream only
+// (for multi-device sync). The target user is NOT notified.
+message UserBlockToggledEvent {
+  // User ID of the target user.
+  int32 target_user_id = 1;
+  // True if blocked, false if unblocked.
+  bool is_blocked = 2;
+}
+
+// UserProfileUpdatedEvent is produced when a user updates their profile.
+// Delivered as an SnUpdate to the user's own update stream only (multi-device
+// sync). Contacts refresh cached profile data on demand.
+message UserProfileUpdatedEvent {
+  // User ID whose profile was updated.
+  int32 user_id = 1;
+  // Changed fields and their new values. Only changed fields are included.
+  optional string new_nickname = 2;
+  // New avatar URL (present only if avatar was changed).
+  optional string new_avatar_url = 3;
+  // New signature (present only if signature was changed).
+  optional string new_signature = 4;
+}
+
+// ── Conversation event payloads ──
+
+// ConversationActionEvent is produced when a user performs a conversation
+// management action (mute, unmute, delete). Delivered as an SnUpdate
+// to the operator's own update stream only (for multi-device sync).
+// Other participants are NOT notified.
+message ConversationActionEvent {
+  // Target conversation ID.
+  int64 conversation_id = 1;
+  // Action that was performed (MUTE, UNMUTE, DELETE).
+  ConversationActionType action = 2;
+  // Whether message history was cleared. Only present when action = DELETE.
+  bool clear_messages = 3;
+}
+
+// MessageDeletedEvent is produced when a user deletes messages locally
+// (DeleteMessages or DeleteHistory). Delivered as an SnUpdate to the
+// operator's own update stream only (for multi-device sync).
+// Other participants are NOT notified.
+message MessageDeletedEvent {
+  // Target conversation ID.
+  int64 conversation_id = 1;
+  // Deleted message IDs. Empty when up_to_message_id is set.
+  repeated int64 message_ids = 2;
+  // Delete all messages up to and including this ID. Zero when
+  // message_ids is set.
+  int64 up_to_message_id = 3;
+}
+
+// ── Read receipt event payload ──
+
+// ReadReceiptEvent is produced when a user marks messages as read.
+// Delivered as an SnUpdate to the reader's own update stream only
+// (for multi-device sync). The peer is NOT notified.
+message ReadReceiptEvent {
+  // Conversation ID where messages were read.
+  int64 conversation_id = 1;
+  // User ID of the reader.
+  int32 reader_user_id = 2;
+  // Read up to this message ID (inclusive).
+  int64 last_read_message_id = 3;
+  // Timestamp when the read occurred (Unix ms).
+  int64 read_at = 4;
+}
+
+// ── Group-to-individual notification payloads ──
+
+// RemovedFromGroupEvent is delivered as an SnUpdate to the removed
+// member's (user or agent) update stream when they are removed from a
+// group by the owner. Unified event for both user kicks and agent removals.
+message RemovedFromGroupEvent {
+  // Group ID the member was removed from.
+  int32 group_id = 1;
+  // User ID of the operator who performed the removal.
+  int32 operator_id = 2;
+}
+
+// GroupDissolvedEvent is produced when the group owner dissolves the group.
+// Delivered as an SnUpdate to every member's update stream.
+message GroupDissolvedEvent {
+  // User ID of the owner who dissolved the group.
+  int32 operator_id = 1;
+  // Group ID that was dissolved.
+  int32 group_id = 2;
+}
+
+// ── Agent event payloads ──
+
+// AgentStatusChangedEvent is produced when an agent is deleted by its
+// developer. Delivered as an SnUpdate to all users who have added this
+// agent as a contact.
+message AgentStatusChangedEvent {
+  // Agent user ID.
+  int32 agent_user_id = 1;
+  // New agent status.
+  AgentStatus new_status = 2;
+}

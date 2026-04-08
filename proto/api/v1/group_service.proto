@@ -1,0 +1,320 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/group.proto";
+import "shared/v1/options.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// GroupService handles group lifecycle, membership, and settings.
+// Authenticated via Access Token.
+//
+// Group lifecycle:
+//   - CreateGroup creates a GROUP conversation and adds the creator as
+//     owner.
+//   - DissolveGroup permanently removes the group (owner only).
+//
+// System message integration:
+//   All state-changing operations produce GroupContent system messages
+//   delivered to the group conversation. See shared/v1/group_event.proto
+//   for the full list of event payloads:
+//   - Member changes: MemberJoinedEvent, MemberLeftEvent,
+//     MemberRemovedEvent.
+//   - Setting changes: GroupInfoChangedEvent.
+service GroupService {
+  // ── Lifecycle ──
+
+  // CreateGroup creates a new group conversation.
+  //
+  // Side effects:
+  //   - Creates a GROUP conversation and adds the creator as owner.
+  //   - Delivers a single MemberJoinedEvent containing all initial members.
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: Name is empty or fewer than 2 member_ids.
+  //   - FAILED_PRECONDITION: After filtering invalid/blocked users,
+  //     total members (including creator) are fewer than 3.
+  //   - RESOURCE_EXHAUSTED: Total members (including creator) exceed the
+  //     group member limit (200).
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // DissolveGroup permanently dissolves a group.
+  //
+  // Side effects:
+  //   - Marks the group as DISSOLVED; no further messages can be sent.
+  //   - Removes all members from the group.
+  //   - Delivers GroupDissolvedEvent SnUpdate to every member's update stream.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist.
+  //   - FAILED_PRECONDITION: Group is already dissolved.
+  //   - PERMISSION_DENIED: Caller is not the group owner.
+  rpc DissolveGroup(DissolveGroupRequest) returns (DissolveGroupResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ── Group settings ──
+
+  // UpdateGroupName updates the group display name.
+  //
+  // Side effects:
+  //   - Delivers GroupInfoChangedEvent (field="name") to the group
+  //     conversation.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist.
+  //   - FAILED_PRECONDITION: Group is dissolved.
+  //   - PERMISSION_DENIED: Caller is not the owner.
+  //   - INVALID_ARGUMENT: Name is empty.
+  rpc UpdateGroupName(UpdateGroupNameRequest) returns (UpdateGroupNameResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // UpdateGroupAvatar updates the group avatar.
+  //
+  // Side effects:
+  //   - Delivers GroupInfoChangedEvent (field="avatar") to the group
+  //     conversation.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist.
+  //   - FAILED_PRECONDITION: Group is dissolved.
+  //   - PERMISSION_DENIED: Caller is not the owner.
+  rpc UpdateGroupAvatar(UpdateGroupAvatarRequest) returns (UpdateGroupAvatarResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // UpdateGroupDescription updates the group description.
+  //
+  // Side effects:
+  //   - Delivers GroupInfoChangedEvent (field="description") to the group
+  //     conversation.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist.
+  //   - FAILED_PRECONDITION: Group is dissolved.
+  //   - PERMISSION_DENIED: Caller is not the owner.
+  rpc UpdateGroupDescription(UpdateGroupDescriptionRequest) returns (UpdateGroupDescriptionResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ── Membership ──
+
+  // InviteMembers invites one or more users or agents to join the group.
+  // The server auto-detects member type (user vs agent) by account_type.
+  //
+  // Side effects:
+  //   - Adds the invited members to the group.
+  //   - Delivers a single MemberJoinedEvent containing all newly added members.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist.
+  //   - FAILED_PRECONDITION: Group is dissolved.
+  //   - PERMISSION_DENIED: Caller is not the owner.
+  //   - RESOURCE_EXHAUSTED: Adding these members would exceed the group
+  //     member limit or agent limit.
+  //
+  // Skipped silently (no error):
+  //   - User IDs that do not exist.
+  //   - Users who have blocked the inviter (or vice versa).
+  //   - Users/agents who are already group members.
+  //   - Agents that are not active.
+  rpc InviteMembers(InviteMembersRequest) returns (InviteMembersResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // RemoveMember removes a member (user or agent) from the group (owner only).
+  //
+  // Side effects:
+  //   - Removes the target from the group.
+  //   - Delivers MemberRemovedEvent to the group conversation.
+  //   - Delivers RemovedFromGroupEvent SnUpdate to the removed member's
+  //     update stream.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist, or target is not a member.
+  //   - FAILED_PRECONDITION: Group is dissolved.
+  //   - PERMISSION_DENIED: Caller is not the owner.
+  //   - INVALID_ARGUMENT: Cannot remove the group owner.
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // LeaveGroup allows a member to voluntarily leave the group.
+  // The group owner cannot leave; use DissolveGroup instead.
+  //
+  // Side effects:
+  //   - Removes the caller from the group.
+  //   - Delivers MemberLeftEvent to the group conversation.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist, or caller is not a member.
+  //   - FAILED_PRECONDITION: Group is dissolved.
+  //   - PERMISSION_DENIED: Caller is the group owner (must dissolve instead).
+  rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
+
+  // ── Query ──
+
+  // GetGroupInfo returns group details with all members and their user info.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Group does not exist.
+  //   - FAILED_PRECONDITION: Group is dissolved.
+  //   - PERMISSION_DENIED: Caller is not a member of the group.
+  rpc GetGroupInfo(GetGroupInfoRequest) returns (GetGroupInfoResponse);
+
+  // ListGroups returns the current user's joined groups with cursor-based
+  // pagination.
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+}
+
+// CreateGroupRequest creates a new group.
+message CreateGroupRequest {
+  // Group display name.
+  string name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+  // Group avatar URL. Empty string uses system default avatar.
+  string avatar_url = 2 [(buf.validate.field).string.max_len = 2048];
+  // Initial member user IDs to invite (excluding the creator who is
+  // added automatically). At least 2 members required (group minimum
+  // is 3 including the creator). Max group size is 200 including the
+  // creator.
+  repeated int32 member_ids = 3 [(buf.validate.field).repeated = {
+    min_items: 2
+    max_items: 199
+  }];
+  // Group description (optional).
+  string description = 4 [(buf.validate.field).string.max_len = 500];
+}
+
+// CreateGroupResponse contains the created group info.
+message CreateGroupResponse {
+  // Created group details.
+  shared.v1.GroupInfo group = 1;
+}
+
+// DissolveGroupRequest dissolves a group.
+message DissolveGroupRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// DissolveGroupResponse is returned after group dissolution.
+message DissolveGroupResponse {}
+
+// UpdateGroupNameRequest updates the group name.
+message UpdateGroupNameRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+  // New group name.
+  string name = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+}
+
+// UpdateGroupNameResponse is returned after name update.
+message UpdateGroupNameResponse {}
+
+// UpdateGroupAvatarRequest updates the group avatar.
+message UpdateGroupAvatarRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+  // New avatar URL.
+  string avatar_url = 2 [(buf.validate.field).string.max_len = 2048];
+}
+
+// UpdateGroupAvatarResponse is returned after avatar update.
+message UpdateGroupAvatarResponse {}
+
+// UpdateGroupDescriptionRequest updates the group description.
+message UpdateGroupDescriptionRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+  // New group description.
+  string description = 2 [(buf.validate.field).string.max_len = 500];
+}
+
+// UpdateGroupDescriptionResponse is returned after description update.
+message UpdateGroupDescriptionResponse {}
+
+// InviteMembersRequest invites users or agents to the group.
+// The server auto-detects member type by looking up account_type.
+message InviteMembersRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+  // User IDs to invite (can include both users and agents).
+  // Server enforces max group size and max agent count.
+  repeated int32 member_ids = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 99
+  }];
+}
+
+// InviteMembersResponse is returned after member invitation.
+message InviteMembersResponse {}
+
+// RemoveMemberRequest removes a member (user or agent) from the group.
+message RemoveMemberRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+  // Target member user ID (can be a user or agent).
+  int32 target_id = 2 [(buf.validate.field).int32.gt = 0];
+}
+
+// RemoveMemberResponse is returned after member removal.
+message RemoveMemberResponse {}
+
+// LeaveGroupRequest allows a member to leave.
+message LeaveGroupRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// LeaveGroupResponse is returned after leaving a group.
+message LeaveGroupResponse {}
+
+// GetGroupInfoRequest requests group details.
+message GetGroupInfoRequest {
+  // Group ID.
+  int32 group_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// GetGroupInfoResponse contains the group details with all members.
+message GetGroupInfoResponse {
+  // Group detail info.
+  shared.v1.GroupInfo group = 1;
+  // All group members (lightweight: user_id + role + joined_at).
+  repeated shared.v1.MemberInfo members = 2;
+  // User info for all members, keyed by user_id. Clients join
+  // members[i].user_id with this list for display.
+  repeated shared.v1.UserInfo users = 3;
+}
+
+// ── List groups ──
+
+// ListGroupsRequest requests the current user's joined groups.
+message ListGroupsRequest {
+  // Pagination anchor: only return groups with group_id > after_id.
+  // Omit for the first page.
+  optional int32 after_id = 1;
+  // Maximum number of items to return (default: 50, max: 200).
+  int32 limit = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 200
+  }];
+}
+
+// ListGroupsResponse contains the user's joined groups.
+message ListGroupsResponse {
+  // Joined group info items.
+  repeated shared.v1.GroupInfo groups = 1;
+  // Whether there are more groups beyond this page.
+  bool has_more = 2;
+}

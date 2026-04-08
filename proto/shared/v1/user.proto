@@ -1,0 +1,77 @@
+syntax = "proto3";
+package shared.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// AccountType distinguishes human users from agent accounts.
+enum AccountType {
+  // Unspecified.
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  // Human user.
+  ACCOUNT_TYPE_USER = 1;
+  // Agent.
+  ACCOUNT_TYPE_AGENT = 2;
+}
+
+// DeviceType defines client device platforms.
+enum DeviceType {
+  // Unspecified.
+  DEVICE_TYPE_UNSPECIFIED = 0;
+  // iOS device.
+  DEVICE_TYPE_IOS = 1;
+  // Android device.
+  DEVICE_TYPE_ANDROID = 2;
+  // Web browser.
+  DEVICE_TYPE_WEB = 3;
+  // Desktop application.
+  DEVICE_TYPE_DESKTOP = 4;
+  // CLI / TUI terminal client.
+  DEVICE_TYPE_CLI = 5;
+}
+
+// PushPlatform defines push notification platforms.
+// Only APNs and FCM are supported in the current version.
+// Desktop clients (Tauri) rely on the in-app long connection.
+enum PushPlatform {
+  // Unspecified.
+  PUSH_PLATFORM_UNSPECIFIED = 0;
+  // Apple Push Notification service.
+  PUSH_PLATFORM_APNS = 1;
+  // Firebase Cloud Messaging.
+  PUSH_PLATFORM_FCM = 2;
+}
+
+// UserInfo is the public view of a user, used across list rendering and
+// profile pages. Combines identity and display fields into a single
+// reusable structure.
+//
+// Online status is NOT included in this structure.
+message UserInfo {
+  // User ID.
+  int32 user_id = 1;
+  // Username (globally unique public identifier).
+  string username = 2;
+  // Display nickname.
+  string nickname = 3;
+  // Avatar URL.
+  string avatar_url = 4;
+  // Account type: user or agent.
+  AccountType account_type = 5;
+  // Signature / bio.
+  string signature = 6;
+}
+
+// PushTokenInfo defines structured push token information.
+message PushTokenInfo {
+  // Push token string.
+  string token = 1 [(buf.validate.field).string.min_len = 1];
+  // Push notification platform.
+  PushPlatform platform = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Whether this is a sandbox environment token.
+  bool is_sandbox = 3;
+}

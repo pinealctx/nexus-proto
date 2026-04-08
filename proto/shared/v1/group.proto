@@ -1,0 +1,54 @@
+syntax = "proto3";
+package shared.v1;
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// MemberRole defines group member roles.
+enum MemberRole {
+  // Unspecified.
+  MEMBER_ROLE_UNSPECIFIED = 0;
+  // Group owner.
+  MEMBER_ROLE_OWNER = 1;
+  // Regular member.
+  MEMBER_ROLE_MEMBER = 2;
+}
+
+// GroupStatus defines group lifecycle states.
+enum GroupStatus {
+  // Unspecified.
+  GROUP_STATUS_UNSPECIFIED = 0;
+  // Group is active and operational.
+  GROUP_STATUS_NORMAL = 1;
+  // Group has been dissolved.
+  GROUP_STATUS_DISSOLVED = 2;
+}
+
+// GroupInfo is the shared group detail structure.
+message GroupInfo {
+  // Group ID. The group conversation_id equals int64(group_id).
+  int32 group_id = 1;
+  // Group display name.
+  string name = 2;
+  // Group avatar URL.
+  string avatar_url = 3;
+  // Group description text.
+  string description = 4;
+  // Group creation time (Unix ms).
+  int64 created_at = 5;
+  // Group owner user ID.
+  int32 owner_id = 6;
+  // Group lifecycle status (normal, dissolved, etc.).
+  GroupStatus status = 7;
+}
+
+// MemberInfo represents a group member (lightweight).
+// User details (nickname, avatar, etc.) are provided separately via
+// the users list in GetGroupInfoResponse or related_users in push events.
+message MemberInfo {
+  // Member user ID.
+  int32 user_id = 1;
+  // Member role (owner/member).
+  MemberRole role = 2;
+  // Time when the member joined (Unix ms).
+  int64 joined_at = 3;
+}

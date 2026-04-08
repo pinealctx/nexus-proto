@@ -1,0 +1,157 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/conversation.proto";
+import "shared/v1/group.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// ConversationService handles conversation list retrieval, actions, and
+// read-state management. Authenticated via Access Token.
+//
+// Conversation lifecycle:
+//   - PRIVATE conversations are created implicitly when a friend request
+//     is accepted (via ContactService.AcceptFriendRequest), or when a
+//     user adds an agent as a contact (via ContactService.AddContact).
+//   - GROUP conversations are created via GroupService.CreateGroup.
+//
+// Conversation list model:
+//   - Conversations are paginated by the `last_message_time` field descending.
+//   - Responses include related_users to avoid extra
+//     round-trips for rendering the conversation list UI.
+service ConversationService {
+  // GetConversation returns a single conversation detail by ID.
+  //
+  // Clients should call this when they receive a message push for a
+  // conversation_id that is not in their local list (e.g., a previously
+  // deleted conversation that was auto-restored by the server).
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse);
+
+  // ListConversations returns conversations ordered by last_message_time descending,
+  // with cursor-based pagination.
+  //
+  // This is also the entry point for reconnection sync: after
+  // authentication, clients pull the full conversation list, compare each
+  // conversation's last_message_id with their local value, and call
+  // MessageService.GetMessageHistory for conversations with a gap.
+  //
+  // Note: Deleted conversations that have been auto-restored (due to a new
+  // incoming message) will appear in the results normally.
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse);
+
+  // UpdateConversationAction performs a unified conversation action.
+  //
+  // Supported actions:
+  //   - MUTE: Mute conversation notifications.
+  //   - UNMUTE: Restore conversation notifications.
+  //   - DELETE: Soft-delete the conversation from the user's list.
+  //
+  // Access control:
+  //   - Permission is checked against the underlying relationship (contact
+  //     for PRIVATE, group membership for GROUP).
+  //   - If no per-user conversation state exists yet, it is created
+  //     automatically.
+  //
+  // DELETE behavior:
+  //   - Sets is_deleted flag for the current user only (per-user soft-delete).
+  //   - If clear_messages is true, also clears the user's local message
+  //     history for this conversation (server-side per-user clear).
+  //   - The conversation is automatically restored (is_deleted cleared)
+  //     when a new message arrives in the conversation. There is no
+  //     explicit RESTORE action; restoration is implicit and server-driven.
+  //   - Online clients: receive the new message via long-connection push
+  //     and should re-add the conversation to their list.
+  //   - Offline clients: the next ListConversations call naturally returns
+  //     the restored conversation since is_deleted has been cleared.
+  //   - If a client receives a message for an unknown conversation_id,
+  //     it should call GetConversation to fetch the full conversation info.
+  //
+  // Side effects:
+  //   - Delivers a ConversationActionEvent to the current
+  //     user's update stream for multi-device sync. Other devices consume
+  //     this event to keep conversation list state consistent.
+  rpc UpdateConversationAction(UpdateConversationActionRequest) returns (UpdateConversationActionResponse);
+
+  // MarkAsRead updates the current user's read position in a conversation.
+  //
+  // Access control:
+  //   - Same as UpdateConversationAction: checks underlying relationship,
+  //     auto-creates per-user conversation state if needed.
+  //
+  // Side effects:
+  //   - Updates last_read_message_id in the conversation membership.
+  //   - Produces a ReadReceiptEvent SnUpdate to the caller's own
+  //     update stream (multi-device sync only; the peer is not notified).
+  //   - The server does NOT maintain unread_count. Clients calculate it
+  //     locally: unread = last_message_id - last_read_message_id.
+  rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse);
+}
+
+// ── Request/Response messages ──
+
+// GetConversationRequest requests a single conversation by ID.
+message GetConversationRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+}
+
+// GetConversationResponse contains the conversation detail.
+message GetConversationResponse {
+  // Conversation info.
+  shared.v1.ConversationInfo conversation = 1;
+}
+
+// ListConversationsRequest requests conversations with pagination.
+message ListConversationsRequest {
+  // Pagination anchor: only return conversations with last_message_time < before_time.
+  // Omit for the first page.
+  optional int64 before_time = 1;
+  // Maximum number of items to return (default: 20, max: 100).
+  int32 limit = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 100
+  }];
+}
+
+// ListConversationsResponse contains conversations with related user and group data.
+message ListConversationsResponse {
+  // Conversations ordered by last_message_time descending.
+  repeated shared.v1.ConversationInfo conversations = 1;
+  // Related user info referenced by the conversations (private chat peers, message senders).
+  repeated shared.v1.UserInfo related_users = 2;
+  // Related group info referenced by GROUP-type conversations.
+  repeated shared.v1.GroupInfo related_groups = 3;
+  // Whether there are more conversations beyond this page.
+  bool has_more = 4;
+}
+
+// UpdateConversationActionRequest performs a conversation action.
+message UpdateConversationActionRequest {
+  // Target conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Action to perform.
+  shared.v1.ConversationActionType action = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Whether to clear the user's message history for this conversation.
+  // Only used when action = DELETE. Defaults to false (keep history).
+  bool clear_messages = 3;
+}
+
+// UpdateConversationActionResponse is returned after the action is performed.
+message UpdateConversationActionResponse {}
+
+// MarkAsReadRequest marks messages as read up to a given message ID.
+message MarkAsReadRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Mark all messages up to and including this message ID as read.
+  // Must be >= current last_read_message_id (cannot go backwards).
+  int64 up_to_message_id = 2 [(buf.validate.field).int64.gt = 0];
+}
+
+// MarkAsReadResponse is returned after the read position is updated.
+message MarkAsReadResponse {}

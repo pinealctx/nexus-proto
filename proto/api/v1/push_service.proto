@@ -1,0 +1,84 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/options.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// PushService handles push notification token registration and removal.
+// Authenticated via Access Token.
+service PushService {
+  // RegisterToken registers a push notification token for the current device.
+  //
+  // Side effects:
+  //   - Stores the push token associated with the device and user.
+  //   - If a token already exists for this device, it is replaced.
+  //   - The device becomes eligible for push notifications.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - INVALID_ARGUMENT: Token is empty or platform is UNSPECIFIED.
+  rpc RegisterToken(RegisterTokenRequest) returns (RegisterTokenResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // UnregisterToken removes the push token for a device.
+  //
+  // Side effects:
+  //   - Deletes the push token for the specified device.
+  //   - The device stops receiving push notifications.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - NOT_FOUND: No push token registered for this device.
+  rpc UnregisterToken(UnregisterTokenRequest) returns (UnregisterTokenResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ClearBadge clears the push notification badge count for the user.
+  //
+  // Side effects:
+  //   - iOS: Sends a silent push with badge=0 to clear the app icon badge.
+  //   - Android: No server-side action needed (client clears locally).
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  rpc ClearBadge(ClearBadgeRequest) returns (ClearBadgeResponse) {
+    option (shared.v1.user_only) = true;
+  }
+}
+
+// RegisterTokenRequest registers a push token.
+message RegisterTokenRequest {
+  // Device ID.
+  string device_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Push token string.
+  string token = 2 [(buf.validate.field).string.min_len = 1];
+  // Push notification platform.
+  shared.v1.PushPlatform platform = 3 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Whether this is a sandbox environment token (APNs sandbox).
+  bool is_sandbox = 4;
+}
+
+// RegisterTokenResponse is returned after the token is registered.
+message RegisterTokenResponse {}
+
+// UnregisterTokenRequest removes a push token.
+message UnregisterTokenRequest {
+  // Device ID.
+  string device_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// UnregisterTokenResponse is returned after the token is removed.
+message UnregisterTokenResponse {}
+
+// ClearBadgeRequest clears the push notification badge count.
+message ClearBadgeRequest {}
+
+// ClearBadgeResponse is returned after the badge is cleared.
+message ClearBadgeResponse {}

@@ -1,0 +1,19 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/pinealctx/nexus-proto/gen/go
+  disable:
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+
+# Go message types — all directories need Go structs.
+inputs:
+  - directory: .
+
+plugins:
+  - local: protoc-gen-go
+    out: ../gen/go
+    opt:
+      - paths=source_relative

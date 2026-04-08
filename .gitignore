@@ -1,0 +1,16 @@
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Buf
+.task/
+
+# Local overrides
+*.local.*

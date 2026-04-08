@@ -1,0 +1,15 @@
+syntax = "proto3";
+package shared.v1;
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// ErrorDetail is the standard error payload attached to connect.Error details.
+// It is the sole mechanism for clients to identify and handle errors.
+message ErrorDetail {
+  // Numeric business error code. Client uses this for programmatic handling.
+  int32 error_code = 1;
+  // Error name (readable identifier, e.g. "INVALID_TOKEN"). For logging.
+  string error_name = 2;
+  // Optional metadata (e.g. retry_after, attempts_remaining).
+  map<string, string> metadata = 3;
+}

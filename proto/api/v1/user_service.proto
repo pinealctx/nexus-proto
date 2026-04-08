@@ -1,0 +1,246 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/options.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// User represents the current user profile (self view, includes private fields).
+// Online status is NOT included and not exposed to clients.
+message User {
+  // User unique ID.
+  int32 user_id = 1;
+  // Username (globally unique public identifier, used for QR code and permanent link).
+  string username = 2;
+  // Phone number (private).
+  optional string phone = 3;
+  // Email address (private).
+  optional string email = 4;
+  // Display nickname.
+  string nickname = 5;
+  // Avatar URL.
+  string avatar_url = 6;
+  // Signature.
+  string signature = 7;
+  // Whether a password has been set.
+  bool has_password = 8;
+  // Account creation time (Unix ms).
+  int64 created_at = 9;
+  // Whether the user can change their username. Server evaluates the
+  // change policy (e.g., first-time only, once per year) and returns
+  // a simple boolean so clients do not need to know the rules.
+  bool can_change_username = 10;
+}
+
+// Device represents an active device session.
+message Device {
+  // Device unique ID (client-generated, persisted).
+  string device_id = 1;
+  // Device type.
+  shared.v1.DeviceType device_type = 2;
+  // Device name.
+  string device_name = 3;
+  // Device model.
+  string device_model = 4;
+  // OS version.
+  string os_version = 5;
+  // App version.
+  string app_version = 6;
+  // Login IP address.
+  string login_ip = 7;
+  // Login time (Unix ms).
+  int64 login_at = 8;
+  // Last active time (Unix ms).
+  int64 last_active_at = 9;
+  // Whether this is the current device.
+  bool is_current = 10;
+}
+
+// UserService handles user profile, device sessions, and username resolution.
+// Authenticated via Access Token.
+service UserService {
+  // GetProfile returns the current user profile.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+
+  // UpdateProfile updates the current user profile fields.
+  //
+  // Side effects:
+  //   - If avatar_url changes, the old avatar is not deleted (clients
+  //     may still cache it).
+  //   - Delivers a UserProfileUpdatedEvent as an SnUpdate to the user's
+  //     own update stream only (for multi-device sync). Contacts refresh
+  //     cached profile data on demand.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - INVALID_ARGUMENT: Nickname exceeds 64 characters or signature
+  //     exceeds 200 characters.
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ListDevices returns all active device sessions.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // RemoveDevice removes a specific device session.
+  //
+  // Side effects:
+  //   - Revokes the access and refresh tokens for the target device.
+  //   - Closes the long connection for the target device if active.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - NOT_FOUND: Device does not exist or does not belong to the user.
+  //   - INVALID_ARGUMENT: Cannot remove the current device (use Logout).
+  rpc RemoveDevice(RemoveDeviceRequest) returns (RemoveDeviceResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // SetUsername sets the username for the current user (first-time only).
+  //
+  // Side effects:
+  //   - Sets the username globally (unique constraint enforced).
+  //   - The username becomes resolvable via ResolveUsername.
+  //   - Delivers a UsernameChangedEvent as an SnUpdate to the user's own
+  //     update stream only (multi-device sync).
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - FAILED_PRECONDITION: User already has a custom username set.
+  //   - ALREADY_EXISTS: Username is already taken.
+  //   - INVALID_ARGUMENT: Username does not match the required format
+  //     (3-32 chars, lowercase alphanumeric and underscores only).
+  rpc SetUsername(SetUsernameRequest) returns (SetUsernameResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ResolveUsername resolves a username to public user info.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - NOT_FOUND: No user exists with this username.
+  rpc ResolveUsername(ResolveUsernameRequest) returns (ResolveUsernameResponse);
+
+  // BatchGetUserInfo returns public user info for a batch of user IDs.
+  // Used by clients to populate user caches (e.g., conversation list,
+  // group member list, message sender info).
+  //
+  // IDs that do not exist or belong to deleted accounts are silently
+  // omitted from the response (no error raised).
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - INVALID_ARGUMENT: user_ids is empty or exceeds 200 items.
+  rpc BatchGetUserInfo(BatchGetUserInfoRequest) returns (BatchGetUserInfoResponse);
+}
+
+// ── Profile messages ──
+
+// GetProfileRequest requests the current user profile.
+message GetProfileRequest {}
+
+// GetProfileResponse contains the user profile.
+message GetProfileResponse {
+  // Current user profile.
+  User profile = 1;
+}
+
+// UpdateProfileRequest updates user profile fields.
+message UpdateProfileRequest {
+  // New nickname (optional).
+  optional string nickname = 1 [(buf.validate.field).string.max_len = 64];
+  // New signature (optional).
+  optional string signature = 2 [(buf.validate.field).string.max_len = 200];
+  // New avatar URL (optional).
+  optional string avatar_url = 3 [(buf.validate.field).string.max_len = 2048];
+}
+
+// UpdateProfileResponse contains the updated profile.
+message UpdateProfileResponse {
+  // Updated user profile.
+  User profile = 1;
+}
+
+// ── Device messages ──
+
+// ListDevicesRequest requests all active device sessions.
+message ListDevicesRequest {}
+
+// ListDevicesResponse contains the list of active devices.
+message ListDevicesResponse {
+  // Active device sessions.
+  repeated Device devices = 1;
+}
+
+// RemoveDeviceRequest removes a specific device session.
+message RemoveDeviceRequest {
+  // Target device ID to remove.
+  string device_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// RemoveDeviceResponse is the response for device removal.
+message RemoveDeviceResponse {}
+
+// ── Username messages ──
+
+// SetUsernameRequest sets the username for the current user.
+// Only allowed once (first-time setup). If the user already has a custom
+// username, the request will be rejected.
+message SetUsernameRequest {
+  // Desired username (must be globally unique, 5-32 chars, lowercase
+  // alphanumeric and underscores only).
+  string username = 1 [(buf.validate.field).string = {
+    min_len: 5
+    max_len: 32
+    pattern: "^[a-z][a-z0-9_]*$"
+  }];
+}
+
+// SetUsernameResponse contains the result of setting the username.
+message SetUsernameResponse {
+  // Updated user profile with the new username.
+  User profile = 1;
+}
+
+// ResolveUsernameRequest resolves a username to public user info.
+// Used by QR code scanning, link opening, and username search.
+message ResolveUsernameRequest {
+  // Username to resolve (without @ prefix).
+  string username = 1 [(buf.validate.field).string = {
+    min_len: 5
+    max_len: 32
+  }];
+}
+
+// ResolveUsernameResponse contains the resolved user info.
+message ResolveUsernameResponse {
+  // Resolved user info.
+  shared.v1.UserInfo user = 1;
+  // Whether the resolved user is already a contact of the current user.
+  bool is_contact = 2;
+}
+
+// BatchGetUserInfoRequest requests public info for multiple users.
+message BatchGetUserInfoRequest {
+  // User IDs to look up. Max 200 items per request.
+  repeated int32 user_ids = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 200
+  }];
+}
+
+// BatchGetUserInfoResponse contains the resolved user info map.
+message BatchGetUserInfoResponse {
+  // User info keyed by user_id. IDs not found are omitted.
+  map<int32, shared.v1.UserInfo> users = 1;
+}

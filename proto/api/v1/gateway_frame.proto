@@ -1,0 +1,136 @@
+syntax = "proto3";
+package api.v1;
+
+import "api/v1/auth_service.proto";
+import "shared/v1/gateway_common.proto";
+import "shared/v1/group.proto";
+import "shared/v1/updates.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// ═══════════════════════════════════════════════════════════════════════
+// Upstream (Client → Server)
+// ═══════════════════════════════════════════════════════════════════════
+
+// ClientFrame is the transport-agnostic upstream envelope. The long
+// connection is a push-only channel — clients send only authentication
+// and heartbeat frames upstream. All business requests go through
+// Connect RPC (HTTP).
+message ClientFrame {
+  // Client-generated correlation ID. The server echoes this ID in the
+  // corresponding ServerFrame response so the client can match them.
+  int64 request_id = 1;
+  // Frame type discriminator.
+  ClientFrameType type = 2;
+  // Frame payload, determined by type.
+  oneof payload {
+    // Connection authentication. Server responds with ServerFrame.auth_response.
+    AuthRequest auth_request = 10;
+    // Heartbeat ping. Server responds with ServerFrame.heartbeat_pong.
+    shared.v1.HeartbeatPing heartbeat_ping = 11;
+  }
+}
+
+// ClientFrameType enumerates upstream frame types.
+enum ClientFrameType {
+  // Unspecified.
+  CLIENT_FRAME_TYPE_UNSPECIFIED = 0;
+  // Connection authentication.
+  CLIENT_FRAME_TYPE_AUTH_REQUEST = 1;
+  // Heartbeat ping.
+  CLIENT_FRAME_TYPE_HEARTBEAT_PING = 2;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Downstream (Server → Client)
+// ═══════════════════════════════════════════════════════════════════════
+
+// ServerFrame is the transport-agnostic downstream envelope. Every message
+// sent by the server on the long connection is wrapped in a ServerFrame.
+//
+// For response frames (auth_response, heartbeat_pong), the request_id
+// matches the originating ClientFrame.request_id.
+// For push frames (update, error), the server generates a unique
+// request_id.
+message ServerFrame {
+  // Correlation ID. Echoed from ClientFrame.request_id for responses,
+  // server-generated for pushes.
+  int64 request_id = 1;
+  // Frame type discriminator.
+  ServerFrameType type = 2;
+  // Frame payload, determined by type.
+  oneof payload {
+    // Authentication result. Response to ClientFrame.auth_request.
+    shared.v1.GatewayAuthResponse auth_response = 10;
+    // Update push.
+    Update update = 11;
+    // Heartbeat pong. Response to ClientFrame.heartbeat_ping.
+    shared.v1.HeartbeatPong heartbeat_pong = 12;
+    // Error response or connection-level error push.
+    shared.v1.GatewayErrorFrame error = 13;
+    // Card action answer push (toast/alert from agent).
+    CardActionAnswerPush card_action_answer = 14;
+  }
+}
+
+// ServerFrameType enumerates downstream frame types.
+enum ServerFrameType {
+  // Unspecified.
+  SERVER_FRAME_TYPE_UNSPECIFIED = 0;
+  // Authentication result.
+  SERVER_FRAME_TYPE_AUTH_RESPONSE = 1;
+  // Update push (sequenced or non-sequenced).
+  SERVER_FRAME_TYPE_UPDATE = 2;
+  // Heartbeat pong.
+  SERVER_FRAME_TYPE_HEARTBEAT_PONG = 3;
+  // Error.
+  SERVER_FRAME_TYPE_ERROR = 4;
+  // Card action answer (toast/alert from agent).
+  SERVER_FRAME_TYPE_CARD_ACTION_ANSWER = 5;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Frame payloads
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Authentication ──
+
+// AuthRequest is the long-connection authentication request frame.
+message AuthRequest {
+  // Access token.
+  string token = 1;
+  // Client device information.
+  DeviceInput device_info = 2;
+}
+
+// Update wraps an SnUpdate or NonSnUpdate with related entity info
+// for client-side rendering without extra lookups.
+message Update {
+  // Related user info referenced by the update (sender, peer, operator, etc.).
+  repeated shared.v1.UserInfo users = 1;
+  // Related group info referenced by the update (for group events).
+  repeated shared.v1.GroupInfo groups = 2;
+  // Update payload.
+  oneof update {
+    // Sequenced update.
+    shared.v1.SnUpdate sn_update = 10;
+    // Non-sequenced update (ephemeral, e.g. stream deltas).
+    shared.v1.NonSnUpdate non_sn_update = 11;
+  }
+}
+
+// ── Card action answer ──
+
+// CardActionAnswerPush is pushed when an agent responds to an Adaptive
+// Card Action.Submit via AnswerCardAction. The client displays the text
+// as a toast or alert dialog depending on show_alert.
+// This is an ephemeral notification, not persisted as a message.
+message CardActionAnswerPush {
+  // Action ID that this answer corresponds to.
+  string action_id = 1;
+  // Response text to display.
+  string text = 2;
+  // Whether to show as alert dialog (true) or toast (false).
+  bool show_alert = 3;
+}

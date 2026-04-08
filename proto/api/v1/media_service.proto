@@ -1,0 +1,195 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/media.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// MediaService handles file upload and download for all media types.
+// Authenticated via Access Token.
+//
+// Upload strategies:
+//   - Small files (avatars, thumbnails): use UploadFile for single-request
+//     upload. Returns a permanent public URL for AVATAR/GROUP_AVATAR
+//     purpose.
+//   - Large files (message attachments): use InitUpload → UploadChunk →
+//     CompleteUpload for resumable chunked upload. Returns a file_id;
+//     clients obtain time-limited download URLs via GetDownloadURL.
+//
+// Access control:
+//   - AVATAR / GROUP_AVATAR files are publicly accessible via permanent
+//     URL. No download RPC needed.
+//   - MESSAGE files are private. GetDownloadURL issues a time-limited
+//     signed URL.
+service MediaService {
+  // ── Single-request upload (small files) ──
+
+  // UploadFile uploads a complete file in a single request.
+  // Suitable for avatars and small media (recommended < 5 MB).
+  //
+  // Side effects:
+  //   - Stores the file and generates metadata (dimensions, checksum).
+  //   - For AVATAR/GROUP_AVATAR purpose, generates a permanent public URL
+  //     in MediaFileInfo.public_url.
+  //   - For MESSAGE purpose, generates a thumbnail if applicable.
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: File is empty, content_type is missing, or
+  //     purpose is UNSPECIFIED.
+  //   - RESOURCE_EXHAUSTED: File exceeds the size limit for single upload
+  //     (5 MB). Use chunked upload instead.
+  rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
+
+  // ── Chunked upload (large files) ──
+
+  // InitUpload initializes a resumable chunked upload session.
+  // Only for MESSAGE purpose files (attachments, videos, etc.).
+  //
+  // Side effects:
+  //   - Creates an upload session with a TTL (default 24 hours).
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: File name, content_type, or size is missing.
+  //   - RESOURCE_EXHAUSTED: File size exceeds the maximum allowed
+  //     (100 MB).
+  rpc InitUpload(InitUploadRequest) returns (InitUploadResponse);
+
+  // UploadChunk uploads a file chunk to an active session.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Session does not exist or has expired.
+  //   - INVALID_ARGUMENT: Offset does not match the expected position.
+  //   - RESOURCE_EXHAUSTED: Chunk would exceed the declared file size.
+  rpc UploadChunk(UploadChunkRequest) returns (UploadChunkResponse);
+
+  // CompleteUpload finalizes the chunked upload and returns file metadata.
+  //
+  // Side effects:
+  //   - Validates checksum integrity and generates metadata (dimensions,
+  //     thumbnail).
+  //   - Deletes the upload session.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Session does not exist or has expired.
+  //   - FAILED_PRECONDITION: Uploaded bytes do not match declared size.
+  rpc CompleteUpload(CompleteUploadRequest) returns (CompleteUploadResponse);
+
+  // ── Download ──
+
+  // GetDownloadURL returns a time-limited signed download URL for a
+  // private (MESSAGE purpose) file.
+  //
+  // Access control: file_id is not enumerable, which provides
+  // sufficient protection against unauthorized access.
+  // No conversation membership check is performed.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: File does not exist.
+  rpc GetDownloadURL(GetDownloadURLRequest) returns (GetDownloadURLResponse);
+}
+
+// ── Single upload messages ──
+
+// UploadFileRequest uploads a complete file in one request.
+message UploadFileRequest {
+  // Original file name.
+  string file_name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // MIME content type.
+  string content_type = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // Intended usage (determines storage visibility).
+  shared.v1.MediaPurpose purpose = 3 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // File binary data.
+  bytes data = 4 [(buf.validate.field).bytes = {
+    min_len: 1
+    max_len: 5242880
+  }];
+}
+
+// UploadFileResponse contains the uploaded file metadata.
+message UploadFileResponse {
+  // Uploaded file metadata. For AVATAR/GROUP_AVATAR, public_url is
+  // populated. For MESSAGE, use file_id with GetDownloadURL.
+  shared.v1.MediaFileInfo file = 1;
+}
+
+// ── Chunked upload messages ──
+
+// InitUploadRequest initializes a chunked upload session.
+message InitUploadRequest {
+  // Original file name.
+  string file_name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // MIME content type.
+  string content_type = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // Total file size in bytes.
+  int64 size = 3 [(buf.validate.field).int64 = {
+    gt: 0
+    lte: 104857600
+  }];
+}
+
+// InitUploadResponse contains the upload session info.
+message InitUploadResponse {
+  // Upload session ID.
+  string session_id = 1;
+  // Bytes already uploaded (non-zero when resuming a previous session).
+  int64 uploaded = 2;
+  // Session creation time (Unix ms).
+  int64 created_at = 3;
+}
+
+// UploadChunkRequest uploads a file chunk.
+message UploadChunkRequest {
+  // Upload session ID.
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Chunk binary data.
+  bytes chunk = 2 [(buf.validate.field).bytes.min_len = 1];
+  // Byte offset of this chunk.
+  int64 offset = 3 [(buf.validate.field).int64.gte = 0];
+}
+
+// UploadChunkResponse is returned after a chunk is uploaded.
+message UploadChunkResponse {}
+
+// CompleteUploadRequest finalizes the chunked upload.
+message CompleteUploadRequest {
+  // Upload session ID.
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// CompleteUploadResponse contains the uploaded file metadata.
+message CompleteUploadResponse {
+  // Uploaded file metadata.
+  shared.v1.MediaFileInfo file = 1;
+}
+
+// ── Download messages ──
+
+// GetDownloadURLRequest requests a download URL for a private file.
+message GetDownloadURLRequest {
+  // File ID to download.
+  string file_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// GetDownloadURLResponse contains the time-limited download URL.
+message GetDownloadURLResponse {
+  // Signed download URL (expires in 1 hour).
+  string url = 1;
+  // URL expiration time (Unix ms).
+  int64 expires_at = 2;
+}

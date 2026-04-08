@@ -1,0 +1,77 @@
+syntax = "proto3";
+package shared.v1;
+
+import "shared/v1/group.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// GroupContent carries structured group event data as the body of a
+// system message (MessageType = GROUP) delivered to a GROUP conversation.
+// Each event type has its own strongly-typed payload.
+//
+// The oneof field implicitly identifies the event type, so no separate
+// enum is needed. Clients and agents switch on the oneof case to handle
+// the appropriate in-chat system notification.
+message GroupContent {
+  // Group ID this event belongs to.
+  int32 group_id = 7;
+
+  // Event payload. Exactly one field is set, identifying the event type.
+  oneof event {
+    // Members joined the group (user or agent).
+    MemberJoinedEvent member_joined = 1;
+    // A member voluntarily left the group.
+    MemberLeftEvent member_left = 2;
+    // A member was removed from the group by the owner.
+    MemberRemovedEvent member_removed = 3;
+    // Group metadata was changed (name, avatar, description, etc.).
+    GroupInfoChangedEvent group_info_changed = 4;
+  }
+}
+
+// ── Group member event payloads ──
+
+// MemberJoinedEvent is produced when members (users or agents) join a
+// group. Supports batch joins: group creation and multi-invite produce
+// a single event containing all member info, so clients render one
+// "A, B, C joined" message instead of multiple individual messages.
+// Delivered as a system message to the group conversation.
+message MemberJoinedEvent {
+  // Members who joined in this batch.
+  repeated MemberInfo members = 1;
+  // The inviter who added these members (absent for group creation).
+  MemberInfo inviter = 2;
+}
+
+// MemberLeftEvent is produced when a member voluntarily leaves a group.
+// Delivered as a system message to the group conversation.
+message MemberLeftEvent {
+  // The member who left.
+  MemberInfo member = 1;
+}
+
+// MemberRemovedEvent is produced when a member (user or agent) is removed
+// by the group owner.
+//
+// Delivery:
+//   - GROUP conversation: visible to all remaining members.
+//   - Removed member: receives a RemovedFromGroupEvent SnUpdate.
+message MemberRemovedEvent {
+  // The member who was removed.
+  MemberInfo member = 1;
+  // The owner who performed the removal.
+  MemberInfo operator = 2;
+}
+
+// ── Group setting event payloads ──
+
+// GroupInfoChangedEvent is produced when group metadata is updated
+// (name, avatar, description, or other settings). Delivered as a system
+// message to the group conversation. Clients obtain the latest values
+// from related_groups in the push event.
+message GroupInfoChangedEvent {
+  // The operator who made the change.
+  MemberInfo operator = 1;
+  // Changed field identifier (e.g. "name", "avatar", "description").
+  string field = 2;
+}

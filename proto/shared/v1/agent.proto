@@ -1,0 +1,115 @@
+syntax = "proto3";
+package shared.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// AgentStatus defines agent lifecycle states.
+enum AgentStatus {
+  // Unspecified.
+  AGENT_STATUS_UNSPECIFIED = 0;
+  // Agent is active and operational.
+  AGENT_STATUS_ACTIVE = 1;
+  // Agent has been permanently deleted (soft-delete).
+  AGENT_STATUS_DELETED = 2;
+}
+
+// AgentVisibility defines agent discoverability and addability.
+enum AgentVisibility {
+  // Unspecified.
+  AGENT_VISIBILITY_UNSPECIFIED = 0;
+  // Agent is publicly listed in the directory. Any user can search and add.
+  AGENT_VISIBILITY_PUBLIC = 1;
+  // Agent is private. Only the creator can use it (auto-added on creation).
+  AGENT_VISIBILITY_PRIVATE = 2;
+}
+
+// AgentCommandInfo represents a registered agent slash command.
+message AgentCommandInfo {
+  // Command name (e.g. "/help").
+  string command = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 32
+  }];
+  // Command description.
+  string description = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+}
+
+// AgentCommandList is a wrapper for serializing a list of commands
+// as a single protobuf message.
+message AgentCommandList {
+  // Registered commands.
+  repeated AgentCommandInfo items = 1;
+}
+
+// AgentDetail is the full detail view of an agent for profile pages.
+message AgentDetail {
+  // Agent user info (user_id, username, nickname, avatar_url, account_type).
+  // The signature field in UserInfo serves as the agent description.
+  UserInfo user = 1;
+  // Registered slash commands.
+  repeated AgentCommandInfo commands = 2;
+  // Agent creator info.
+  UserInfo creator = 3;
+  // Agent status (active/deleted).
+  AgentStatus status = 4;
+  // Agent creation time (Unix ms).
+  int64 created_at = 5;
+}
+
+// AgentProfile is the self-view of an agent's profile, returned to the
+// agent developer via AgentService.GetSelfAgent.
+message AgentProfile {
+  // Agent status.
+  AgentStatus status = 1;
+  // Agent visibility.
+  AgentVisibility visibility = 2;
+  // Allowed IP addresses for API access.
+  repeated string ip_whitelist = 3;
+  // Registered slash commands.
+  repeated AgentCommandInfo commands = 4;
+  // Agent token prefix (e.g. "nxa_xxxx") for identification.
+  string token_prefix = 5;
+  // Whether a webhook URL is configured.
+  bool webhook_configured = 6;
+  // Whether this is a system agent.
+  bool is_system_agent = 7;
+  // Agent creation time (Unix ms).
+  int64 created_at = 8;
+  // Agent last update time (Unix ms).
+  int64 updated_at = 9;
+  // Agent event delivery mode.
+  AgentDeliveryMode delivery_mode = 10;
+}
+
+// AgentDeliveryMode defines the event delivery mode for an agent.
+enum AgentDeliveryMode {
+  // Unspecified.
+  AGENT_DELIVERY_MODE_UNSPECIFIED = 0;
+  // Events delivered via Webhook HTTP POST.
+  AGENT_DELIVERY_MODE_WEBHOOK = 1;
+  // Events delivered via WebSocket push.
+  AGENT_DELIVERY_MODE_WEBSOCKET = 2;
+}
+
+// ── Delivery configuration ──
+
+// WebhookDeliveryConfig configures webhook delivery.
+message WebhookDeliveryConfig {
+  // Webhook URL (must be HTTPS).
+  string url = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2048
+  }];
+}
+
+// WebSocketDeliveryConfig enables WebSocket delivery.
+message WebSocketDeliveryConfig {}
+
+// NoDeliveryConfig stops all event delivery.
+message NoDeliveryConfig {}

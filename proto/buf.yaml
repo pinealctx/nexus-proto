@@ -1,0 +1,18 @@
+version: v2
+modules:
+  - path: .
+deps:
+  - buf.build/bufbuild/protovalidate
+lint:
+  use:
+    - STANDARD
+    - COMMENTS
+    - UNARY_RPC
+  except:
+    - PACKAGE_VERSION_SUFFIX
+    - RPC_NO_SERVER_STREAMING
+breaking:
+  use:
+    - FILE
+  except:
+    - FIELD_SAME_TYPE  # 允许 string -> enum 的类型强化

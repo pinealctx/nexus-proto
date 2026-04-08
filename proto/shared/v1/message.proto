@@ -1,0 +1,367 @@
+syntax = "proto3";
+package shared.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/group_event.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// MessageType defines message content types.
+enum MessageType {
+  // Unspecified.
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  // Plain text message.
+  MESSAGE_TYPE_TEXT = 1;
+  // Image message.
+  MESSAGE_TYPE_IMAGE = 2;
+  // Audio/voice message.
+  MESSAGE_TYPE_AUDIO = 3;
+  // Video message.
+  MESSAGE_TYPE_VIDEO = 4;
+  // File attachment message.
+  MESSAGE_TYPE_FILE = 5;
+  // Markdown formatted message.
+  MESSAGE_TYPE_MARKDOWN = 6;
+  // Interactive card message.
+  MESSAGE_TYPE_CARD = 7;
+  // Streaming message.
+  MESSAGE_TYPE_STREAM = 8;
+  // Group event message (delivered to group conversation).
+  MESSAGE_TYPE_GROUP = 10;
+  // Message recalled notification.
+  MESSAGE_TYPE_RECALLED = 11;
+}
+
+// ── Rich text entity types ──
+
+// MessageEntity represents a rich text annotation using offset + length.
+message MessageEntity {
+  // Entity type.
+  MessageEntityType type = 1;
+  // Start offset in characters.
+  int32 offset = 2;
+  // Length in characters.
+  int32 length = 3;
+  // Entity-specific data.
+  oneof data {
+    // @mention entity.
+    MentionEntity mention = 10;
+    // URL link entity.
+    UrlEntity url = 11;
+    // Phone number entity.
+    PhoneEntity phone = 12;
+    // Hashtag entity.
+    HashtagEntity hashtag = 13;
+  }
+}
+
+// MessageEntityType defines rich text annotation types.
+enum MessageEntityType {
+  // Unspecified.
+  MESSAGE_ENTITY_TYPE_UNSPECIFIED = 0;
+  // @mention.
+  MESSAGE_ENTITY_TYPE_MENTION = 1;
+  // URL link.
+  MESSAGE_ENTITY_TYPE_URL = 2;
+  // Phone number.
+  MESSAGE_ENTITY_TYPE_PHONE = 3;
+  // Hashtag.
+  MESSAGE_ENTITY_TYPE_HASHTAG = 4;
+  // Email address.
+  MESSAGE_ENTITY_TYPE_EMAIL = 5;
+  // Bold text.
+  MESSAGE_ENTITY_TYPE_BOLD = 6;
+  // Italic text.
+  MESSAGE_ENTITY_TYPE_ITALIC = 7;
+  // Code span.
+  MESSAGE_ENTITY_TYPE_CODE = 8;
+}
+
+// MentionEntity carries @mention data.
+message MentionEntity {
+  // Mentioned user ID.
+  int32 user_id = 1;
+  // Whether this is an @all (mention everyone).
+  bool is_all = 2;
+}
+
+// UrlEntity carries URL link data.
+message UrlEntity {
+  // URL address.
+  string url = 1;
+  // Display text override (optional).
+  optional string display_text = 2;
+}
+
+// PhoneEntity carries phone number data.
+message PhoneEntity {
+  // Phone number.
+  string phone_number = 1;
+}
+
+// HashtagEntity carries hashtag data.
+message HashtagEntity {
+  // Tag content (without # prefix).
+  string tag = 1;
+}
+
+// ── Message content types ──
+
+// MessageBody carries the message type and polymorphic content.
+// All message content variants are included, enabling both users and
+// agents to receive and parse every message type.
+message MessageBody {
+  // Message type discriminator.
+  MessageType type = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Polymorphic message content based on type.
+  oneof content {
+    // Plain text content.
+    TextContent text = 10;
+    // Image content.
+    ImageContent image = 11;
+    // Audio/voice content.
+    AudioContent audio = 12;
+    // Video content.
+    VideoContent video = 13;
+    // File attachment content.
+    FileContent file = 14;
+    // Markdown formatted content.
+    MarkdownContent markdown = 15;
+    // Interactive card content.
+    CardContent card = 16;
+    // Streaming content.
+    StreamContent stream = 17;
+    // Group event content (delivered to group conversations).
+    GroupContent group = 18;
+    // Message recalled notification content.
+    RecalledContent recalled = 19;
+    // Custom binary payload for extensibility.
+    bytes custom_payload = 30;
+  }
+}
+
+// TextContent carries plain text message data.
+message TextContent {
+  // Text content.
+  string text = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 10000
+  }];
+  // Rich text entities (@mentions, URLs, phone numbers, etc.).
+  repeated MessageEntity entities = 2;
+}
+
+// ImageContent carries image message data.
+message ImageContent {
+  // Original image file ID.
+  string file_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Thumbnail file ID.
+  string thumbnail_file_id = 2;
+  // Image width in pixels.
+  int32 width = 3;
+  // Image height in pixels.
+  int32 height = 4;
+  // File size in bytes.
+  int64 size_bytes = 5;
+  // Image format (jpg/png/gif/webp).
+  string format = 6;
+}
+
+// AudioContent carries audio/voice message data.
+message AudioContent {
+  // Audio file ID.
+  string file_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Audio duration in milliseconds.
+  int32 duration_ms = 2 [(buf.validate.field).int32.gte = 0];
+  // File size in bytes.
+  int64 size_bytes = 3;
+  // Speech-to-text transcript (optional).
+  optional string transcript = 4;
+}
+
+// VideoContent carries video message data.
+message VideoContent {
+  // Video file ID.
+  string file_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Video thumbnail file ID.
+  string thumbnail_file_id = 2;
+  // Video duration in milliseconds.
+  int32 duration_ms = 3;
+  // Video width in pixels.
+  int32 width = 4;
+  // Video height in pixels.
+  int32 height = 5;
+  // File size in bytes.
+  int64 size_bytes = 6;
+}
+
+// FileContent carries file attachment message data.
+message FileContent {
+  // File ID.
+  string file_id = 1 [(buf.validate.field).string.min_len = 1];
+  // File name.
+  string filename = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // File size in bytes.
+  int64 size_bytes = 3;
+  // MIME type.
+  string mime_type = 4;
+  // SHA256 checksum (optional).
+  optional string checksum_sha256 = 5;
+}
+
+// MarkdownContent carries markdown formatted message data.
+message MarkdownContent {
+  // Raw markdown text (rendered by client).
+  string raw_markdown = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 20000
+  }];
+  // Extracted entities (@mentions, URLs, etc.).
+  repeated MessageEntity entities = 2;
+}
+
+// CardContent carries an Adaptive Card message payload.
+// The card_json field contains a valid Adaptive Card JSON conforming to
+// https://adaptivecards.io/schemas/adaptive-card.json
+//
+// Server validates JSON syntax and enforces a 50 KB size limit, but does
+// NOT validate against the Adaptive Card schema. Rendering is entirely
+// the client's responsibility.
+//
+// Interaction:
+//   - Action.OpenUrl: handled client-side (open browser/webview).
+//   - Action.Submit: client sends SubmitCardAction RPC with the
+//     action's data payload, which is forwarded to the agent.
+//   - Action.ShowCard / Action.ToggleVisibility: handled client-side.
+message CardContent {
+  // Adaptive Card JSON payload.
+  // Must be valid JSON and ≤ 50 KB.
+  string card_json = 1 [(buf.validate.field).string = {
+    min_len: 2
+    max_len: 51200
+  }];
+  // Plain text fallback for clients that cannot render Adaptive Cards.
+  string fallback_text = 2 [(buf.validate.field).string.max_len = 1000];
+}
+
+// StreamContent carries streaming message data (e.g. agent real-time
+// generation). Delivered via Update push on the long connection.
+//
+// The stream is uniquely identified by message_id (assigned when the
+// agent calls SendMessage with type=STREAM). Each delta carries a seq
+// number for dedup and ordering.
+//
+// Lifecycle:
+//   1. START: A new streaming message is created (message_id assigned),
+//      StreamContent with phase=START is pushed. No text content yet.
+//   2. DELTA: Incremental text fragments are pushed via Update.
+//      Deltas are ephemeral push-only payloads.
+//   3. END: The final accumulated text is committed and phase=END
+//      is pushed with the complete content.
+//   4. ERROR: Generation failed; the error state is committed.
+//
+// Recovery after disconnect / app restart:
+//   Clients must track locally which stream messages have not reached
+//   a terminal phase (END or ERROR). On reconnect, call
+//   MessageService.GetMessage for each incomplete stream. The returned
+//   StreamContent reflects the current server-side state:
+//   - phase=END + accumulated_text: generation finished while offline.
+//   - phase=ERROR: generation failed.
+//   - phase=DELTA: still generating; client resumes receiving deltas
+//     from the long connection. Use accumulated_text as the baseline
+//     and append subsequent deltas.
+message StreamContent {
+  // Current lifecycle phase.
+  StreamPhase phase = 1;
+  // Delta sequence number (agent-side auto-increment, starting from 1).
+  // Used for dedup and ordering. Only meaningful in
+  // DELTA phase pushes; 0 for START/END/ERROR.
+  int32 seq = 2;
+  // Incremental text fragment. Only meaningful in DELTA pushes.
+  string delta = 3;
+  // Content MIME type (e.g. "text/plain", "text/markdown").
+  string content_type = 4;
+  // Accumulated full text up to this point. Populated in:
+  //   - END phase: the complete final content.
+  //   - ERROR phase: partial content generated before the error.
+  //   - HTTP query (GetMessage): current accumulated content regardless
+  //     of phase, enabling clients to recover after disconnect.
+  // Empty in real-time DELTA pushes (clients accumulate locally).
+  string accumulated_text = 5;
+  // Rich text entities (@mentions, URLs, etc.) for the accumulated text.
+  // Only populated in END phase and HTTP query responses. Empty in
+  // START, DELTA, and ERROR phases.
+  repeated MessageEntity entities = 6;
+  // Error description. Only populated in ERROR phase.
+  string error_message = 7;
+}
+
+// StreamPhase defines streaming message lifecycle phases.
+enum StreamPhase {
+  // Unspecified.
+  STREAM_PHASE_UNSPECIFIED = 0;
+  // Stream started.
+  STREAM_PHASE_START = 1;
+  // Incremental delta.
+  STREAM_PHASE_DELTA = 2;
+  // Stream completed.
+  STREAM_PHASE_END = 3;
+  // Stream error.
+  STREAM_PHASE_ERROR = 4;
+}
+
+// ReplyContext defines the context of a replied message.
+message ReplyContext {
+  // Replied message ID.
+  int64 message_id = 1;
+  // Replied message sender ID.
+  int32 sender_id = 2;
+  // Replied message sender nickname.
+  string sender_nickname = 3;
+  // Content preview of the replied message (first 100 chars).
+  string content_preview = 4;
+}
+
+// MessageEnvelope is the unified message representation.
+message MessageEnvelope {
+  // ── Identity ──
+
+  // Message ID (auto-increment within conversation).
+  int64 message_id = 1;
+  // Conversation ID.
+  int64 conversation_id = 2;
+  // Sender ID (user_id or agent_user_id). For group event messages
+  // (GROUP), sender_id is 0. For recalled messages, sender_id
+  // remains the original sender.
+  int32 sender_id = 3;
+
+  // ── Content ──
+
+  // Message body.
+  MessageBody body = 4;
+  // Reply context (quoted message reference).
+  optional ReplyContext reply_to = 5;
+  // Extensible metadata key-value pairs.
+  map<string, string> metadata = 6;
+
+  // ── Timestamps & state ──
+
+  // Message creation time (Unix ms).
+  int64 created_at = 7;
+  // Last content modification time (Unix ms). Set on edit or recall.
+  optional int64 updated_at = 8;
+  // Whether the message has been edited. Not set for recalls.
+  bool edited = 9;
+}
+
+// RecalledContent replaces the original message body when a message is
+// recalled by its sender. The envelope's message_id and sender_id remain
+// unchanged. Clients resolve the sender nickname from their local user
+// cache to render "Alice recalled a message".
+message RecalledContent {}

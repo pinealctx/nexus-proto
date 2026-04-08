@@ -1,0 +1,21 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/pinealctx/nexus-proto/gen/go
+  disable:
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+
+# Go Connect handlers — api (client-facing services).
+inputs:
+  - directory: .
+    paths:
+      - api
+
+plugins:
+  - local: protoc-gen-connect-go
+    out: ../gen/go
+    opt:
+      - paths=source_relative

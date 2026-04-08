@@ -1,0 +1,49 @@
+syntax = "proto3";
+package shared.v1;
+
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// FriendRequestStatus defines friend request lifecycle states.
+enum FriendRequestStatus {
+  // Unspecified.
+  FRIEND_REQUEST_STATUS_UNSPECIFIED = 0;
+  // Request is pending review.
+  FRIEND_REQUEST_STATUS_PENDING = 1;
+  // Request has been accepted.
+  FRIEND_REQUEST_STATUS_ACCEPTED = 2;
+  // Request has been rejected.
+  FRIEND_REQUEST_STATUS_REJECTED = 3;
+}
+
+// PendingRequestItem represents a friend request record.
+// Used in events (FriendRequestReceivedEvent, FriendRequestAcceptedEvent)
+// and in ListPendingRequestsResponse. User info is provided separately
+// via related_users (in Update push) or a sibling users field (in RPC
+// responses).
+message PendingRequestItem {
+  // Friend request ID (server-assigned, auto-increment).
+  int64 request_id = 1;
+  // User ID of the requester.
+  int32 from_user_id = 2;
+  // User ID of the target.
+  int32 to_user_id = 3;
+  // Message attached to the friend request.
+  string message = 4;
+  // Request creation time (Unix ms).
+  int64 created_at = 5;
+}
+
+// ContactItem represents a single contact entry in a user's or agent's
+// contact list. For users, a contact is created when a friend request is
+// accepted. For agents, a contact is created when a user adds the agent.
+message ContactItem {
+  // Contact user info (user_id, username, nickname, avatar_url, account_type).
+  UserInfo user = 1;
+  // Custom alias set by current user. Overrides nickname in UI when present.
+  // Only applicable for user contacts, always absent for agent contacts.
+  optional string alias = 2;
+  // Contact creation time (Unix ms).
+  int64 created_at = 3;
+}

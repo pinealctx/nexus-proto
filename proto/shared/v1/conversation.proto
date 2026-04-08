@@ -1,0 +1,64 @@
+syntax = "proto3";
+package shared.v1;
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// ConversationType defines conversation types.
+enum ConversationType {
+  // Unspecified.
+  CONVERSATION_TYPE_UNSPECIFIED = 0;
+  // Private one-on-one chat.
+  CONVERSATION_TYPE_PRIVATE = 1;
+  // Group chat.
+  CONVERSATION_TYPE_GROUP = 2;
+}
+
+// ConversationActionType defines conversation management actions.
+enum ConversationActionType {
+  // Unspecified.
+  CONVERSATION_ACTION_TYPE_UNSPECIFIED = 0;
+  // Mute conversation notifications.
+  CONVERSATION_ACTION_TYPE_MUTE = 1;
+  // Unmute conversation notifications.
+  CONVERSATION_ACTION_TYPE_UNMUTE = 2;
+  // Soft-delete conversation from the user's list. See
+  // UpdateConversationAction RPC for the full delete lifecycle.
+  CONVERSATION_ACTION_TYPE_DELETE = 3;
+}
+
+// ConversationInfo represents a conversation entry in a user's or agent's
+// conversation list. Covers private and group conversation types.
+//
+// Sync model:
+// Each conversation maintains an independent message_id sequence.
+// Clients compare their local last_message_id with the server's value
+// to determine whether incremental message fetching is needed.
+//
+// Unread count:
+// The server does NOT return unread_count. Clients calculate it locally:
+//   unread = last_message_id - last_read_message_id
+message ConversationInfo {
+  // Conversation ID (deterministic encoding, not auto-increment).
+  // - PRIVATE: int64(max(a,b)) << 32 | int64(min(a,b))
+  // - GROUP:   int64(group_id)
+  int64 conversation_id = 1;
+  // Conversation type (PRIVATE, GROUP).
+  ConversationType type = 2;
+  // Whether notifications are muted for this conversation.
+  bool is_muted = 3;
+  // Timestamp of the last message (Unix ms). Only updated when a new
+  // message arrives, NOT when a message is deleted or edited. Also used
+  // as the sort key for conversation list ordering.
+  int64 last_message_time = 4;
+  // Last message ID in this conversation (for incremental sync).
+  // Clients compare this with their local max message_id to determine
+  // whether to pull new messages.
+  // Also used for client-side unread calculation:
+  //   unread = last_message_id - last_read_message_id
+  int64 last_message_id = 5;
+  // Current user's last read message ID (read position).
+  int64 last_read_message_id = 6;
+  // Peer ID. For PRIVATE conversations this is the other user's ID
+  // (including agents). For GROUP conversations this is the group_id.
+  int32 peer_id = 7;
+}

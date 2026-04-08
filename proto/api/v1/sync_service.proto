@@ -1,0 +1,56 @@
+syntax = "proto3";
+package api.v1;
+
+import "shared/v1/options.proto";
+import "shared/v1/updates.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// SyncService provides incremental state synchronization for clients.
+// Clients maintain a local sequence number (sn) and use these RPCs to
+// retrieve updates that occurred after their last known state.
+// Authenticated via Access Token.
+service SyncService {
+  // GetDifference returns updates since the client's last known sn.
+  // Clients call this on reconnect or when a gap is detected in the
+  // pushed update stream.
+  rpc GetDifference(GetDifferenceRequest) returns (GetDifferenceResponse) {
+    option (shared.v1.user_only) = true;
+  }
+  // GetCurrentState returns the server's latest sn. Used during the
+  // initial sync flow so the client can establish a baseline before
+  // fetching full state via other RPCs.
+  rpc GetCurrentState(GetCurrentStateRequest) returns (GetCurrentStateResponse) {
+    option (shared.v1.user_only) = true;
+  }
+}
+
+// GetDifferenceRequest requests updates after the given sn.
+message GetDifferenceRequest {
+  // The client's last known sync number.
+  int32 sn = 1;
+}
+
+// GetDifferenceResponse contains the updates and sync metadata.
+message GetDifferenceResponse {
+  // Ordered list of updates since the requested sn.
+  repeated shared.v1.SnUpdate updates = 1;
+  // The new sn after applying all returned updates.
+  int32 sn = 2;
+  // Whether more updates remain on the server. If true, the client
+  // should call GetDifference again with the returned sn.
+  bool has_more = 3;
+  // Whether the gap is too large for incremental sync. If true, the
+  // client should discard local state and perform a full resync.
+  bool update_too_long = 4;
+}
+
+// GetCurrentStateRequest is empty; the server identifies the user
+// from the authenticated session.
+message GetCurrentStateRequest {}
+
+// GetCurrentStateResponse contains the server's current sync state.
+message GetCurrentStateResponse {
+  // The server's current sync state for this user.
+  shared.v1.UpdateState state = 1;
+}

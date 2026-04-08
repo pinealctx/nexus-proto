@@ -1,0 +1,374 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/contact.proto";
+import "shared/v1/options.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// BlockedUserItem represents a blocked user entry.
+// When a user is blocked:
+//   - Neither party can send messages or friend requests to the other.
+//   - If the two users are contacts, the contact relationship is removed.
+//   - Existing conversations are hidden but not deleted.
+//   - A UserBlockToggledEvent is delivered to the blocker's
+//     update stream.
+message BlockedUserItem {
+  // Blocked user info.
+  shared.v1.UserInfo user = 1;
+  // Time when the user was blocked (Unix ms).
+  int64 blocked_at = 2;
+}
+
+// ContactService handles friend requests, contact management, and blocklist.
+// Authenticated via Access Token.
+//
+// update stream integration:
+// All state-changing operations in this service produce SnUpdate entries
+// delivered to the relevant users' update stream. This ensures clients
+// can reliably sync contact state changes via the SyncService.GetDifference
+// mechanism.
+//
+// See shared.v1 (in shared/v1/updates.proto) for the full list of
+// contact-related event payloads.
+service ContactService {
+  // ── Friend requests ──
+
+  // SendFriendRequest sends a friend request to a target user.
+  //
+  // Side effects:
+  //   - Creates a pending friend request record.
+  //   - Delivers a FriendRequestReceivedEvent to the target
+  //     user's update stream, containing the requester's info and greeting.
+  //   - If the target user is online, the update is pushed in real-time
+  //     via the long connection.
+  //
+  // Error conditions:
+  //   - ALREADY_EXISTS: A pending request already exists between the two users.
+  //   - NOT_FOUND: Target user does not exist.
+  //   - PERMISSION_DENIED: Either user has blocked the other.
+  //   - FAILED_PRECONDITION: Users are already contacts.
+  rpc SendFriendRequest(SendFriendRequestRequest) returns (SendFriendRequestResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ListPendingRequests lists pending incoming friend requests for the
+  // current user, ordered by creation time descending.
+  rpc ListPendingRequests(ListPendingRequestsRequest) returns (ListPendingRequestsResponse);
+
+  // AcceptFriendRequest accepts a pending friend request.
+  //
+  // Side effects:
+  //   - Updates the request status from PENDING to ACCEPTED.
+  //   - Creates a mutual contact relationship between both users.
+  //   - Delivers a FriendRequestAcceptedEvent to both
+  //     parties' update stream, containing each other's brief info.
+  //   - A PRIVATE conversation is created if one does not already exist.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Request does not exist.
+  //   - FAILED_PRECONDITION: Request has already been handled (ACCEPTED/REJECTED).
+  rpc AcceptFriendRequest(AcceptFriendRequestRequest) returns (AcceptFriendRequestResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // RejectFriendRequest rejects a pending friend request.
+  //
+  // Side effects:
+  //   - Updates the request status from PENDING to REJECTED.
+  //   - Delivers a FriendRequestRejectedEvent to the
+  //     requester's update stream.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Request does not exist.
+  //   - FAILED_PRECONDITION: Request has already been handled (ACCEPTED/REJECTED).
+  rpc RejectFriendRequest(RejectFriendRequestRequest) returns (RejectFriendRequestResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ── Contacts ──
+
+  // AddContact adds a contact without friend request approval.
+  // Currently supports adding public agents and private agents (creator only).
+  //
+  // Side effects:
+  //   - Creates bidirectional contact relationships.
+  //   - Delivers a ContactAddedEvent SnUpdate to the caller's update stream
+  //     (multi-device sync). Clients use this to create the local contact
+  //     record and the PRIVATE conversation.
+  //   - Delivers a contact.added webhook event to the agent.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Target user does not exist.
+  //   - ALREADY_EXISTS: Contact relationship already exists.
+  //   - PERMISSION_DENIED: Private agent, caller is not the creator.
+  //   - FAILED_PRECONDITION: Target is a regular user (use SendFriendRequest).
+  //   - FAILED_PRECONDITION: Agent status is not ACTIVE (error_code 7003).
+  rpc AddContact(AddContactRequest) returns (AddContactResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ListContacts returns the current user's contact list.
+  rpc ListContacts(ListContactsRequest) returns (ListContactsResponse);
+
+  // DeleteContact removes a contact from the current user's contact list.
+  // This is a single-sided operation: only the caller's contact record
+  // is removed. The other party's contact list is not affected.
+  //
+  // Side effects:
+  //   - Delivers a ContactDeletedEvent to the caller's own update stream
+  //     (multi-device sync). The other party is not notified.
+  //   - The private conversation is NOT deleted; it remains accessible
+  //     but new messages cannot be sent until re-friended.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Contact relationship does not exist.
+  rpc DeleteContact(DeleteContactRequest) returns (DeleteContactResponse);
+
+  // UpdateContactAlias sets or clears a custom alias for a contact.
+  // The alias overrides the contact's nickname in the current user's UI.
+  //
+  // Side effects:
+  //   - Delivers a ContactAliasUpdatedEvent to the caller's own update
+  //     box (multi-device sync).
+  rpc UpdateContactAlias(UpdateContactAliasRequest) returns (UpdateContactAliasResponse);
+
+  // ── Search ──
+
+  // SearchUsers searches for users and/or agents across the platform.
+  // Supports filtering by account type (USER, AGENT, or ALL).
+  //
+  // For human users: exact match on phone, email, or username (returns
+  // at most 1 result).
+  // For agents: fuzzy match on nickname, username, and description
+  // (returns at most 10 results). Only PUBLIC + ACTIVE agents are
+  // returned.
+  //
+  // Results exclude the current user and blocked users.
+  // No pagination — results are capped by design.
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+
+  // ── Blocklist ──
+
+  // BlockUser blocks a user.
+  //
+  // Side effects:
+  //   - If the blocked user is a contact, the contact relationship is
+  //     removed (equivalent to DeleteContact + block).
+  //   - Delivers a UserBlockToggledEvent (is_blocked=true) to
+  //     the blocker's own update stream (for multi-device sync). The
+  //     blocked user is NOT notified.
+  //   - Any pending friend requests between the two users are cancelled.
+  //   - The blocked user can no longer send messages or friend requests
+  //     to the blocker. The blocker also cannot send messages to the
+  //     blocked user.
+  //
+  // Error conditions:
+  //   - ALREADY_EXISTS: User is already blocked.
+  //   - NOT_FOUND: Target user does not exist.
+  rpc BlockUser(BlockUserRequest) returns (BlockUserResponse);
+
+  // UnblockUser unblocks a previously blocked user.
+  //
+  // Side effects:
+  //   - Delivers a UserBlockToggledEvent (is_blocked=false) to
+  //     the unblocker's own update stream (for multi-device sync). The
+  //     unblocked user is NOT notified.
+  //   - Unblocking does NOT restore the contact relationship; the user
+  //     must send a new friend request.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: User is not in the blocklist.
+  rpc UnblockUser(UnblockUserRequest) returns (UnblockUserResponse);
+
+  // ListBlocked lists all blocked users for the current user.
+  rpc ListBlocked(ListBlockedRequest) returns (ListBlockedResponse);
+}
+
+// ── Friend request messages ──
+
+// SendFriendRequestRequest is the request to send a friend request.
+message SendFriendRequestRequest {
+  // Target user ID to send the friend request to.
+  int32 target_user_id = 1 [(buf.validate.field).int32.gt = 0];
+  // Optional greeting message (max 200 chars). Included in the
+  // FriendRequestReceivedEvent delivered to the target's update stream.
+  string message = 2 [(buf.validate.field).string.max_len = 200];
+}
+
+// SendFriendRequestResponse is returned after the friend request is created.
+message SendFriendRequestResponse {
+  // Server-assigned friend request ID.
+  int64 request_id = 1;
+}
+
+// ListPendingRequestsRequest lists pending incoming friend requests.
+message ListPendingRequestsRequest {
+  // Pagination anchor: only return requests created before this timestamp
+  // (Unix ms). Omit for the first page.
+  optional int64 before_time = 1;
+  // Maximum number of items to return (default: 20, max: 100).
+  int32 limit = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 100
+  }];
+}
+
+// ListPendingRequestsResponse contains the paginated list of pending requests.
+message ListPendingRequestsResponse {
+  // Pending friend request items, ordered by created_at descending.
+  repeated shared.v1.PendingRequestItem items = 1;
+  // Whether there are more requests beyond this page.
+  bool has_more = 2;
+  // Related user info referenced by the items (from_user_id values).
+  repeated shared.v1.UserInfo users = 3;
+}
+
+// AcceptFriendRequestRequest accepts a pending friend request by its ID.
+message AcceptFriendRequestRequest {
+  // Friend request ID to accept.
+  int64 request_id = 1 [(buf.validate.field).int64.gt = 0];
+}
+
+// AcceptFriendRequestResponse is returned after the request is accepted.
+// Clients can compute the conversation_id locally using the deterministic
+// encoding: int64(max(a,b)) << 32 | int64(min(a,b)), where a and b are
+// the two user IDs (current user and the requester from PendingRequestItem).
+message AcceptFriendRequestResponse {}
+
+// RejectFriendRequestRequest rejects a pending friend request by its ID.
+message RejectFriendRequestRequest {
+  // Friend request ID to reject.
+  int64 request_id = 1 [(buf.validate.field).int64.gt = 0];
+}
+
+// RejectFriendRequestResponse is returned after the request is rejected.
+message RejectFriendRequestResponse {}
+
+// ── Contact messages ──
+
+// AddContactRequest adds a contact without friend request approval.
+message AddContactRequest {
+  // Target user ID to add as contact.
+  int32 target_user_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// AddContactResponse is returned after the contact is added.
+message AddContactResponse {}
+
+// ListContactsRequest lists the current user's contacts.
+message ListContactsRequest {
+  // Pagination anchor: only return contacts with contact_user_id > after_id.
+  // Omit for the first page. Contacts are ordered by contact_user_id ascending.
+  optional int32 after_id = 1;
+  // Maximum number of items to return (default: 50, max: 200).
+  int32 limit = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 200
+  }];
+}
+
+// ListContactsResponse contains the paginated contact list.
+message ListContactsResponse {
+  // Contact items, ordered by contact_user_id ascending.
+  repeated shared.v1.ContactItem contacts = 1;
+  // Total number of contacts the user has (useful for UI display).
+  int32 total_contacts = 2;
+  // Whether there are more contacts beyond this page.
+  bool has_more = 3;
+}
+
+// DeleteContactRequest removes a contact by user ID.
+message DeleteContactRequest {
+  // User ID of the contact to remove.
+  int32 contact_user_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// DeleteContactResponse is returned after the contact is removed.
+message DeleteContactResponse {}
+
+// UpdateContactAliasRequest sets or clears a contact alias.
+message UpdateContactAliasRequest {
+  // User ID of the contact.
+  int32 contact_user_id = 1 [(buf.validate.field).int32.gt = 0];
+  // New alias. Set to empty or omit to clear the alias.
+  optional string alias = 2 [(buf.validate.field).string.max_len = 64];
+}
+
+// UpdateContactAliasResponse is returned after the alias is updated.
+message UpdateContactAliasResponse {}
+
+// ── Blocklist messages ──
+
+// BlockUserRequest blocks a target user.
+message BlockUserRequest {
+  // User ID to block.
+  int32 target_user_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// BlockUserResponse is returned after the user is blocked.
+message BlockUserResponse {}
+
+// UnblockUserRequest unblocks a previously blocked user.
+message UnblockUserRequest {
+  // User ID to unblock.
+  int32 target_user_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// UnblockUserResponse is returned after the user is unblocked.
+message UnblockUserResponse {}
+
+// ListBlockedRequest lists all blocked users for the current user.
+message ListBlockedRequest {}
+
+// ListBlockedResponse contains the full blocked user list.
+// Blocklists are typically small, so no pagination is provided.
+message ListBlockedResponse {
+  // Blocked user entries, ordered by blocked_at descending.
+  repeated BlockedUserItem blocked = 1;
+}
+
+// ── Search messages ──
+
+// SearchAccountType specifies which account types to include in search.
+enum SearchAccountType {
+  // Unspecified. Searches all account types (users and agents).
+  SEARCH_ACCOUNT_TYPE_UNSPECIFIED = 0;
+  // Search only human users.
+  SEARCH_ACCOUNT_TYPE_USER = 1;
+  // Search only agents.
+  SEARCH_ACCOUNT_TYPE_AGENT = 2;
+}
+
+// SearchUsersRequest searches for users and/or agents across the platform.
+//
+// Search behavior depends on account_type filter:
+//   - USER / ALL: The server auto-detects the search dimension based on
+//     query format:
+//     - Pure digits, length 7-15 → phone exact match
+//     - Contains @ → email exact match
+//     - Otherwise → username exact match
+//     Returns at most 1 result (exact match).
+//   - AGENT / ALL: Fuzzy match against agent nickname, username, and
+//     description. Only PUBLIC + ACTIVE agents are returned.
+//     Returns at most 10 results.
+//
+// No pagination. Results are capped by design.
+message SearchUsersRequest {
+  // Search keyword (phone number, email, username, or agent name).
+  string query = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // Account type filter. Defaults to ALL if unset.
+  SearchAccountType account_type = 2;
+}
+
+// SearchUsersResponse contains unified search results.
+message SearchUsersResponse {
+  // Matched users and/or agents. Does not include the current user or
+  // blocked users. UserInfo does not contain phone/email for privacy.
+  repeated shared.v1.UserInfo items = 1;
+}

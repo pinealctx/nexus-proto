@@ -1,0 +1,109 @@
+syntax = "proto3";
+package shared.v1;
+
+import "shared/v1/group.proto";
+import "shared/v1/message.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// WebhookEventType identifies the kind of webhook event.
+//
+// Agents are first-class citizens in the message system. All message
+// types (text, media, group events, recalls) are
+// delivered as MESSAGE events containing a full MessageEnvelope.
+// This mirrors how regular users receive messages via long connection.
+enum WebhookEventType {
+  // Unspecified.
+  WEBHOOK_EVENT_TYPE_UNSPECIFIED = 0;
+  // New message received. Covers all message types including group
+  // events (group member changes, etc.) which are delivered as
+  // MessageType GROUP within the envelope.
+  WEBHOOK_EVENT_TYPE_MESSAGE = 1;
+  // Adaptive Card Action.Submit from a user.
+  WEBHOOK_EVENT_TYPE_CARD_ACTION = 2;
+  // A user added this agent as a contact.
+  WEBHOOK_EVENT_TYPE_CONTACT_ADDED = 3;
+  // Agent was removed from a group.
+  WEBHOOK_EVENT_TYPE_REMOVED_FROM_GROUP = 4;
+  // A group the agent belongs to was dissolved.
+  WEBHOOK_EVENT_TYPE_GROUP_DISSOLVED = 5;
+}
+
+// WebhookEvent is the unified event envelope delivered to agent webhook
+// endpoints via HTTP POST with protojson serialization.
+//
+// Message delivery model:
+//   Agents receive the same message stream as regular users. Group
+//   events (group membership changes, etc.) arrive as messages with
+//   MessageType GROUP, carrying structured GroupContent payloads.
+message WebhookEvent {
+  // Event type discriminator.
+  WebhookEventType event_type = 1;
+  // Event timestamp (Unix ms).
+  int64 timestamp = 2;
+  // Related user info referenced by the event (sender, operator, etc.).
+  repeated UserInfo related_users = 3;
+  // Related group info referenced by the event (for group events).
+  repeated GroupInfo related_groups = 4;
+  // Typed event payload.
+  oneof payload {
+    // Message event payload (all message types including group events).
+    MessageEventPayload message_event = 10;
+    // Card action event payload (Adaptive Card Action.Submit).
+    CardActionPayload card_action = 11;
+    // Contact added event payload.
+    ContactAddedPayload contact_added = 12;
+    // Removed from group event payload.
+    RemovedFromGroupPayload removed_from_group = 13;
+    // Group dissolved event payload.
+    GroupDissolvedPayload group_dissolved = 14;
+  }
+}
+
+// MessageEventPayload wraps a full message envelope for webhook delivery.
+message MessageEventPayload {
+  // Full message envelope.
+  MessageEnvelope message = 1;
+}
+
+// CardActionPayload contains an Adaptive Card Action.Submit event.
+message CardActionPayload {
+  // Server-assigned action ID (use in AnswerCardAction).
+  string id = 1;
+  // User who submitted the action.
+  int32 sender_id = 2;
+  // Conversation ID.
+  int64 conversation_id = 3;
+  // Card message ID.
+  int64 message_id = 4;
+  // Action data (JSON string from Action.Submit).
+  string action_data = 5;
+  // Action verb identifier.
+  string verb = 6;
+}
+
+// ContactAddedPayload is delivered when a user adds this agent as a
+// contact. The agent can use this to send a welcome message.
+message ContactAddedPayload {
+  // User who added the agent.
+  int32 user_id = 1;
+}
+
+// RemovedFromGroupPayload is delivered when the agent is removed from a
+// group by the group owner.
+message RemovedFromGroupPayload {
+  // Group ID the agent was removed from.
+  int32 group_id = 1;
+  // User ID of the operator who removed the agent.
+  int32 operator_id = 2;
+}
+
+// GroupDissolvedPayload is delivered when a group the agent belongs to
+// is dissolved by its owner.
+message GroupDissolvedPayload {
+  // Group ID that was dissolved.
+  int32 group_id = 1;
+  // User ID of the owner who dissolved the group.
+  int32 operator_id = 2;
+}

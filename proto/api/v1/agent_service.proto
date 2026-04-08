@@ -1,0 +1,215 @@
+syntax = "proto3";
+package api.v1;
+
+import "buf/validate/validate.proto";
+import "shared/v1/agent.proto";
+import "shared/v1/options.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// AgentService handles agent discovery (client side) and agent
+// self-management (agent side, agent_only).
+//
+// Agent lifecycle (client side):
+//   - Users discover agents via ContactService.SearchUsers (account_type=AGENT).
+//   - Users browse featured agents via ListFeaturedAgents.
+//   - Users view agent details via GetAgentDetail.
+//   - Users add agents as contacts via ContactService.AddContact.
+//   - Users remove agent contacts via ContactService.DeleteContact.
+//   - Users list their agent contacts via ContactService.ListContacts
+//     (filtered by account_type = "agent").
+//
+// Agent self-management (agent_only):
+//   - Agents view their own profile via GetSelfAgent.
+//   - Agents update profile fields via UpdateSelfAgent.
+//   - Agents permanently delete themselves via DeleteSelfAgent.
+//   - Agents regenerate their token via RevokeSelfToken.
+//   - Agents configure event delivery via SetDeliveryConfig.
+//
+// Relationship to other services:
+//   - Adding an agent creates a conversation (type = AGENT) visible
+//     in ConversationService.ListConversations.
+//   - Adding an agent to a group is handled by GroupService.AddAgent.
+service AgentService {
+  // ── Discovery ──
+
+  // ListFeaturedAgents returns a batch of recommended agents for the
+  // discovery page. No pagination; call again to get a different batch.
+  // The recommendation strategy may change over time.
+  rpc ListFeaturedAgents(ListFeaturedAgentsRequest) returns (ListFeaturedAgentsResponse);
+
+  // GetAgentDetail returns detailed info for a specific agent.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Agent does not exist or has been deleted.
+  rpc GetAgentDetail(GetAgentDetailRequest) returns (GetAgentDetailResponse);
+
+  // ── Agent self-management (agent_only) ──
+
+  // GetSelfAgent returns the current agent's profile.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired agent token.
+  rpc GetSelfAgent(GetSelfAgentRequest) returns (GetSelfAgentResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+
+  // UpdateSelfAgent updates the current agent's profile fields.
+  //
+  // Side effects:
+  //   - If visibility changes from PRIVATE to PUBLIC, the agent becomes
+  //     discoverable in the client-facing agent directory.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired agent token.
+  //   - INVALID_ARGUMENT: Invalid field values.
+  rpc UpdateSelfAgent(UpdateSelfAgentRequest) returns (UpdateSelfAgentResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+
+  // DeleteSelfAgent permanently deletes the current agent.
+  //
+  // Side effects:
+  //   - Sets agent status to DELETED.
+  //   - Removes the agent from all group memberships.
+  //   - Existing conversations with this agent become read-only.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired agent token.
+  rpc DeleteSelfAgent(DeleteSelfAgentRequest) returns (DeleteSelfAgentResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+
+  // RevokeSelfToken revokes the current agent token and issues a new one.
+  //
+  // Side effects:
+  //   - The current token becomes invalid immediately.
+  //   - A new token is returned in the response.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired agent token.
+  rpc RevokeSelfToken(RevokeSelfTokenRequest) returns (RevokeSelfTokenResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+
+  // SetDeliveryConfig configures the agent's event delivery mode.
+  // Supports three modes via oneof: webhook (HTTPS POST), websocket
+  // (persistent /ws/agent connection), or none (stop all delivery).
+  // Modes are mutually exclusive; setting one clears the other.
+  //
+  // Side effects (webhook mode):
+  //   - Verifies the URL with a test request before saving.
+  //   - Generates a new signing secret (replaces any existing secret).
+  //   - Forces delivery_mode to WEBHOOK.
+  // Side effects (websocket mode):
+  //   - Clears any configured webhook URL and secret.
+  //   - Forces delivery_mode to WEBSOCKET.
+  // Side effects (none mode):
+  //   - Clears webhook config and resets delivery_mode to WEBHOOK.
+  //   - Stops all event delivery until reconfigured.
+  //
+  // Error conditions:
+  //   - FAILED_PRECONDITION: Agent is deleted.
+  //   - INVALID_ARGUMENT: Webhook URL is not a valid HTTPS endpoint.
+  //   - FAILED_PRECONDITION: Webhook URL verification failed.
+  rpc SetDeliveryConfig(SetDeliveryConfigRequest) returns (SetDeliveryConfigResponse) {
+    option (shared.v1.agent_only) = true;
+  }
+}
+
+// ── Discovery messages ──
+
+// ListFeaturedAgentsRequest requests a batch of recommended agents.
+message ListFeaturedAgentsRequest {
+  // Maximum results to return (default: 20, max: 50).
+  int32 limit = 1 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 50
+  }];
+}
+
+// ListFeaturedAgentsResponse contains the recommended agent batch.
+message ListFeaturedAgentsResponse {
+  // Recommended agents.
+  repeated shared.v1.UserInfo agents = 1;
+}
+
+// GetAgentDetailRequest requests detailed info for a specific agent.
+message GetAgentDetailRequest {
+  // Agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// GetAgentDetailResponse contains the agent detail.
+message GetAgentDetailResponse {
+  // Agent detail info.
+  shared.v1.AgentDetail agent = 1;
+}
+
+// ── Agent self-management messages ──
+
+// GetSelfAgentRequest requests the current agent profile.
+message GetSelfAgentRequest {}
+
+// GetSelfAgentResponse contains the full agent profile (developer self-view).
+message GetSelfAgentResponse {
+  // Agent user info (public fields).
+  shared.v1.UserInfo user = 1;
+  // Agent profile (developer-visible fields).
+  shared.v1.AgentProfile profile = 2;
+}
+
+// UpdateSelfAgentRequest updates agent profile fields.
+// All fields are optional; only provided fields are updated.
+message UpdateSelfAgentRequest {
+  // New display name.
+  optional string name = 1 [(buf.validate.field).string.max_len = 64];
+  // New avatar URL.
+  optional string avatar_url = 2 [(buf.validate.field).string.max_len = 2048];
+  // New visibility setting.
+  optional shared.v1.AgentVisibility visibility = 3;
+  // New IP whitelist (replaces existing). Pass empty list to clear.
+  repeated string ip_whitelist = 4 [(buf.validate.field).repeated.max_items = 50];
+  // Slash commands (replaces existing, max 100). When set, replaces all
+  // commands; omit to leave commands unchanged.
+  optional shared.v1.AgentCommandList commands = 5;
+}
+
+// UpdateSelfAgentResponse is returned after the agent is updated.
+message UpdateSelfAgentResponse {}
+
+// DeleteSelfAgentRequest permanently deletes the current agent.
+message DeleteSelfAgentRequest {}
+
+// DeleteSelfAgentResponse is returned after the agent is deleted.
+message DeleteSelfAgentResponse {}
+
+// RevokeSelfTokenRequest revokes the current agent token.
+message RevokeSelfTokenRequest {}
+
+// RevokeSelfTokenResponse contains the new agent token.
+message RevokeSelfTokenResponse {
+  // New agent token (nxa_xxx format).
+  string new_token = 1 [(shared.v1.sensitive) = true];
+}
+
+// SetDeliveryConfigRequest configures the agent's event delivery mode.
+message SetDeliveryConfigRequest {
+  // Delivery configuration (one of webhook, websocket, or none).
+  oneof config {
+    // Switch to WEBHOOK mode with the given URL.
+    shared.v1.WebhookDeliveryConfig webhook = 1;
+    // Switch to WEBSOCKET mode.
+    shared.v1.WebSocketDeliveryConfig websocket = 2;
+    // Stop all delivery (WEBHOOK mode with no URL).
+    shared.v1.NoDeliveryConfig none = 3;
+  }
+}
+
+// SetDeliveryConfigResponse is returned after delivery config is set.
+message SetDeliveryConfigResponse {
+  // Server-generated HMAC-SHA256 signing secret (webhook mode only).
+  // Empty for websocket and none modes.
+  optional string webhook_secret = 1 [(shared.v1.sensitive) = true];
+}

@@ -1,0 +1,470 @@
+syntax = "proto3";
+package api.v1;
+
+import "api/v1/user_service.proto";
+import "buf/validate/validate.proto";
+import "shared/v1/options.proto";
+import "shared/v1/user.proto";
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
+
+// DeviceInput is the client-reported device info submitted during authentication.
+message DeviceInput {
+  // Device unique ID (client-generated, persisted).
+  string device_id = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+  // Device type.
+  shared.v1.DeviceType device_type = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Device name.
+  string device_name = 3 [(buf.validate.field).string.max_len = 128];
+  // Device model.
+  string device_model = 4 [(buf.validate.field).string.max_len = 128];
+  // OS version.
+  string os_version = 5 [(buf.validate.field).string.max_len = 64];
+  // App version.
+  string app_version = 6 [(buf.validate.field).string.max_len = 64];
+  // Structured push token (token, platform, sandbox flag).
+  optional shared.v1.PushTokenInfo push_token = 7;
+}
+
+// IdentityType defines authentication identity types.
+enum IdentityType {
+  // Unspecified.
+  IDENTITY_TYPE_UNSPECIFIED = 0;
+  // Email address.
+  IDENTITY_TYPE_EMAIL = 1;
+  // Phone number.
+  IDENTITY_TYPE_PHONE = 2;
+}
+
+// AuthService handles authentication, token management, and password operations.
+// Authenticated via Access Token (except where skip_auth is set).
+service AuthService {
+  // RequestVerifyCode sends a verification code to the given identity.
+  //
+  // Side effects:
+  //   - Generates a time-limited verification code and sends it via
+  //     the appropriate channel (SMS for phone, email for email).
+  //   - Creates a verification session referenced by verify_token.
+  //   - Rate-limited: max 1 code per identity per 60 seconds.
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: Identity type or value is invalid.
+  //   - RESOURCE_EXHAUSTED: Rate limit exceeded for this identity.
+  rpc RequestVerifyCode(RequestVerifyCodeRequest) returns (RequestVerifyCodeResponse) {
+    option (shared.v1.skip_auth) = true;
+    option (shared.v1.user_only) = true;
+  }
+
+  // VerifyCode validates the code and returns auth tokens.
+  //
+  // Side effects:
+  //   - If the identity is new, creates a user account (is_new_user=true).
+  //   - Creates a device session and issues access + refresh tokens.
+  //   - Invalidates the verification session (single-use).
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: Code is incorrect or verify_token is malformed.
+  //   - NOT_FOUND: Verification session does not exist or has expired.
+  //   - RESOURCE_EXHAUSTED: Too many failed attempts (max 5 per session).
+  rpc VerifyCode(VerifyCodeRequest) returns (VerifyCodeResponse) {
+    option (shared.v1.skip_auth) = true;
+    option (shared.v1.user_only) = true;
+  }
+
+  // LoginPassword authenticates with password credentials.
+  //
+  // Side effects:
+  //   - Creates a device session and issues access + refresh tokens.
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: Identity type or value is invalid.
+  //   - NOT_FOUND: No account exists for this identity.
+  //   - UNAUTHENTICATED: Password is incorrect.
+  //   - RESOURCE_EXHAUSTED: Too many failed login attempts (account
+  //     temporarily locked after 10 consecutive failures).
+  rpc LoginPassword(LoginPasswordRequest) returns (LoginPasswordResponse) {
+    option (shared.v1.skip_auth) = true;
+    option (shared.v1.user_only) = true;
+  }
+
+  // RefreshToken exchanges a refresh token for a new access token.
+  //
+  // Side effects:
+  //   - Issues a new access token with a fresh expiration.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Refresh token is invalid, expired, or revoked.
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (shared.v1.skip_auth) = true;
+    option (shared.v1.user_only) = true;
+  }
+
+  // Logout signs out the current device session.
+  //
+  // Side effects:
+  //   - Revokes the access and refresh tokens for the current device.
+  //   - Closes the long connection for this device if active.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // LogoutAll signs out all device sessions for the user.
+  //
+  // Side effects:
+  //   - Revokes all access and refresh tokens across all devices.
+  //   - Closes all active long connections for the user.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  rpc LogoutAll(LogoutAllRequest) returns (LogoutAllResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // SetupPassword sets a password for a passwordless account.
+  //
+  // Side effects:
+  //   - Stores the password securely for the user account.
+  //   - Enables password-based login for this account.
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - FAILED_PRECONDITION: Account already has a password set.
+  //   - INVALID_ARGUMENT: Password does not meet complexity requirements.
+  rpc SetupPassword(SetupPasswordRequest) returns (SetupPasswordResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ChangePassword changes the current password.
+  //
+  // Side effects:
+  //   - Updates the stored password.
+  //   - Revokes all other device sessions (forces re-login).
+  //
+  // Error conditions:
+  //   - UNAUTHENTICATED: Invalid or expired access token.
+  //   - INVALID_ARGUMENT: New password does not meet complexity requirements.
+  //   - UNAUTHENTICATED: Old password is incorrect.
+  //   - FAILED_PRECONDITION: Account does not have a password set.
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // ResetPasswordRequest initiates a password reset flow (step 1 of 2).
+  //
+  // Sends a verification code to the identity and returns a verify_token.
+  // The client then calls ResetPasswordVerify to exchange the code for a
+  // one-time reset_token, and finally ResetPasswordConfirm to set the
+  // new password.
+  //
+  // The verification code session is independent from RequestVerifyCode
+  // (login flow). They use separate sessions, so a login code cannot
+  // be used for password reset and vice versa.
+  //
+  // Side effects:
+  //   - Generates a verification code and sends it via SMS or email.
+  //   - Creates a reset verification session referenced by verify_token.
+  //   - Rate-limited: same limits as RequestVerifyCode per identity.
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: Identity type or value is invalid.
+  //   - NOT_FOUND: No account exists for this identity.
+  //   - RESOURCE_EXHAUSTED: Rate limit exceeded.
+  rpc ResetPasswordRequest(ResetPasswordRequestRequest) returns (ResetPasswordRequestResponse) {
+    option (shared.v1.skip_auth) = true;
+    option (shared.v1.user_only) = true;
+  }
+
+  // ResetPasswordVerify validates the reset verification code (step 2 of 2a).
+  //
+  // On success, returns a one-time reset_token (TTL 10 min) that the
+  // client uses in ResetPasswordConfirm.
+  //
+  // Side effects:
+  //   - Invalidates the verification session (single-use).
+  //   - Issues a one-time reset_token (TTL 10 min).
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: Code is incorrect.
+  //   - NOT_FOUND: Verification session does not exist or has expired.
+  //   - RESOURCE_EXHAUSTED: Too many failed attempts (max 5 per session).
+  rpc ResetPasswordVerify(ResetPasswordVerifyRequest) returns (ResetPasswordVerifyResponse) {
+    option (shared.v1.skip_auth) = true;
+    option (shared.v1.user_only) = true;
+  }
+
+  // ResetPasswordConfirm sets the new password using a reset_token (step 2 of 2b).
+  //
+  // Side effects:
+  //   - Updates the stored password.
+  //   - Revokes all existing device sessions (forces re-login).
+  //   - Invalidates the reset_token (single-use).
+  //
+  // Error conditions:
+  //   - INVALID_ARGUMENT: New password does not meet complexity requirements.
+  //   - NOT_FOUND: reset_token does not exist, has expired, or was already used.
+  rpc ResetPasswordConfirm(ResetPasswordConfirmRequest) returns (ResetPasswordConfirmResponse) {
+    option (shared.v1.skip_auth) = true;
+    option (shared.v1.user_only) = true;
+  }
+
+  // GetClientConfig returns client-facing configuration such as gateway
+  // endpoints. Clients call this before login to discover service addresses.
+  //
+  // Side effects: none.
+  //
+  // Error conditions: none (always succeeds).
+  rpc GetClientConfig(GetClientConfigRequest) returns (GetClientConfigResponse) {
+    option (shared.v1.skip_auth) = true;
+  }
+}
+
+// RequestVerifyCodeRequest is the request to send a verification code.
+message RequestVerifyCodeRequest {
+  // Identity type (email/phone).
+  IdentityType identity_type = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Identity value (e.g. phone number or email address).
+  string identity_value = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+}
+
+// RequestVerifyCodeResponse is the response after sending a verification code.
+message RequestVerifyCodeResponse {
+  // Opaque token to reference this verification session.
+  string verify_token = 1 [(shared.v1.sensitive) = true];
+  // Token expiration in seconds.
+  int32 expires_in = 2;
+}
+
+// VerifyCodeRequest validates a verification code.
+message VerifyCodeRequest {
+  // Verification session token.
+  string verify_token = 1 [(buf.validate.field).string.min_len = 1];
+  // User-entered verification code.
+  string code = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 10
+  }];
+  // Client device information.
+  DeviceInput device_info = 3 [(buf.validate.field).required = true];
+}
+
+// VerifyCodeResponse is returned after successful code verification.
+message VerifyCodeResponse {
+  // Authenticated user ID.
+  int32 user_id = 1;
+  // Device ID for this session.
+  string device_id = 2;
+  // Whether this is a newly registered user.
+  bool is_new_user = 3;
+  // Access token.
+  string access_token = 4 [(shared.v1.sensitive) = true];
+  // Refresh token for token renewal.
+  string refresh_token = 5 [(shared.v1.sensitive) = true];
+  // Access token expiration in seconds.
+  int32 expires_in = 6;
+  // User profile (present for new users).
+  optional User user = 7;
+}
+
+// LoginPasswordRequest authenticates with password.
+message LoginPasswordRequest {
+  // Identity type (email/phone).
+  IdentityType identity_type = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Identity value.
+  string identity_value = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // User password.
+  string password = 3 [
+    (buf.validate.field).string = {
+      min_len: 8
+      max_len: 128
+    },
+    (shared.v1.sensitive) = true
+  ];
+  // Client device information.
+  DeviceInput device_info = 4 [(buf.validate.field).required = true];
+}
+
+// LoginPasswordResponse is returned after successful password login.
+message LoginPasswordResponse {
+  // Authenticated user ID.
+  int32 user_id = 1;
+  // Device ID for this session.
+  string device_id = 2;
+  // Access token.
+  string access_token = 3 [(shared.v1.sensitive) = true];
+  // Refresh token for token renewal.
+  string refresh_token = 4 [(shared.v1.sensitive) = true];
+  // Access token expiration in seconds.
+  int32 expires_in = 5;
+  // User profile.
+  optional User user = 6;
+}
+
+// RefreshTokenRequest exchanges a refresh token for a new access token.
+message RefreshTokenRequest {
+  // Current refresh token.
+  string refresh_token = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (shared.v1.sensitive) = true
+  ];
+}
+
+// RefreshTokenResponse contains the new access token and rotated refresh token.
+message RefreshTokenResponse {
+  // New access token.
+  string access_token = 1 [(shared.v1.sensitive) = true];
+  // Access token expiration in seconds.
+  int32 expires_in = 2;
+  // Rotated refresh token. The previous refresh token is invalidated.
+  string refresh_token = 3 [(shared.v1.sensitive) = true];
+}
+
+// LogoutRequest signs out the current device.
+message LogoutRequest {}
+
+// LogoutResponse is the response for logout.
+message LogoutResponse {}
+
+// LogoutAllRequest signs out all devices.
+message LogoutAllRequest {}
+
+// LogoutAllResponse is the response for logout all.
+message LogoutAllResponse {}
+
+// SetupPasswordRequest sets a password for a passwordless account.
+message SetupPasswordRequest {
+  // New password to set.
+  string new_password = 1 [
+    (buf.validate.field).string = {
+      min_len: 8
+      max_len: 128
+    },
+    (shared.v1.sensitive) = true
+  ];
+}
+
+// SetupPasswordResponse is the response for password setup.
+message SetupPasswordResponse {}
+
+// ChangePasswordRequest changes the current password.
+message ChangePasswordRequest {
+  // Current password for verification.
+  string old_password = 1 [
+    (buf.validate.field).string = {
+      min_len: 8
+      max_len: 128
+    },
+    (shared.v1.sensitive) = true
+  ];
+  // New password to set.
+  string new_password = 2 [
+    (buf.validate.field).string = {
+      min_len: 8
+      max_len: 128
+    },
+    (shared.v1.sensitive) = true
+  ];
+}
+
+// ChangePasswordResponse is the response for password change.
+message ChangePasswordResponse {}
+
+// ResetPasswordRequestRequest initiates a password reset.
+message ResetPasswordRequestRequest {
+  // Identity type (email/phone).
+  IdentityType identity_type = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  // Identity value.
+  string identity_value = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+}
+
+// ResetPasswordRequestResponse contains the reset session token.
+message ResetPasswordRequestResponse {
+  // Opaque token to reference this reset session.
+  string verify_token = 1 [(shared.v1.sensitive) = true];
+  // Token expiration in seconds.
+  int32 expires_in = 2;
+}
+
+// ResetPasswordVerifyRequest validates the reset verification code.
+message ResetPasswordVerifyRequest {
+  // Reset verification session token (from ResetPasswordRequestResponse).
+  string verify_token = 1 [(buf.validate.field).string.min_len = 1];
+  // User-entered verification code.
+  string code = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 10
+  }];
+}
+
+// ResetPasswordVerifyResponse contains the one-time reset token.
+message ResetPasswordVerifyResponse {
+  // One-time reset token (TTL 10 min). Use in ResetPasswordConfirm.
+  string reset_token = 1 [(shared.v1.sensitive) = true];
+  // Reset token expiration in seconds.
+  int32 expires_in = 2;
+}
+
+// ResetPasswordConfirmRequest completes the password reset using a
+// one-time reset_token obtained from ResetPasswordVerify.
+message ResetPasswordConfirmRequest {
+  // One-time reset token (returned by ResetPasswordRequest after
+  // successful verification).
+  string reset_token = 1 [
+    (buf.validate.field).string.min_len = 1,
+    (shared.v1.sensitive) = true
+  ];
+  // New password to set.
+  string new_password = 2 [
+    (buf.validate.field).string = {
+      min_len: 8
+      max_len: 128
+    },
+    (shared.v1.sensitive) = true
+  ];
+}
+
+// ResetPasswordConfirmResponse is the response for password reset confirmation.
+message ResetPasswordConfirmResponse {}
+
+// GetClientConfigRequest is the request to retrieve client configuration.
+message GetClientConfigRequest {}
+
+// GetClientConfigResponse contains client-facing configuration.
+// Designed for extensibility: add new nested message fields for additional
+// configuration domains (e.g., feature flags, push settings) without new RPCs.
+message GetClientConfigResponse {
+  // Gateway connection endpoints.
+  GatewayEndpoints gateway = 1;
+}
+
+// GatewayEndpoints contains the addresses clients use to connect to the gateway.
+message GatewayEndpoints {
+  // WebSocket endpoint, e.g. "ws://host:8444/ws".
+  string ws_url = 1;
+}
