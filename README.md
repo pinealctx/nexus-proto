@@ -3,7 +3,6 @@
 Nexus 公共协议定义及生成代码。
 
 包含面向客户端和 Agent 的 API 定义（`api/`）以及共享数据类型（`shared/`）。
-内部服务间通信协议（interservice）和管理接口（admin）不在此仓库中。
 
 ## 目录结构
 
