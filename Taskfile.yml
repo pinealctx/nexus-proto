@@ -1,0 +1,21 @@
+# nexus-proto — Taskfile
+# Protobuf code generation for Go message types and Connect RPC handlers.
+version: '3'
+
+tasks:
+  generate:
+    desc: Generate Go code from proto definitions
+    cmds:
+      - cd proto && buf generate --template buf.gen.go.yaml
+      - cd proto && buf generate --template buf.gen.connect.yaml
+
+  clean:
+    desc: Clean generated Go code
+    cmds:
+      - rm -rf gen/go/api
+      - rm -rf gen/go/shared
+
+  lint:
+    desc: Lint proto files
+    cmds:
+      - cd proto && buf lint

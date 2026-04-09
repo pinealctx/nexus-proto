@@ -103,7 +103,7 @@ type AgentServiceClient interface {
 	RevokeSelfToken(context.Context, *connect.Request[v1.RevokeSelfTokenRequest]) (*connect.Response[v1.RevokeSelfTokenResponse], error)
 	// SetDeliveryConfig configures the agent's event delivery mode.
 	// Supports three modes via oneof: webhook (HTTPS POST), websocket
-	// (persistent /ws/agent connection), or none (stop all delivery).
+	// (persistent /ws connection), or none (stop all delivery).
 	// Modes are mutually exclusive; setting one clears the other.
 	//
 	// Side effects (webhook mode):
@@ -275,7 +275,7 @@ type AgentServiceHandler interface {
 	RevokeSelfToken(context.Context, *connect.Request[v1.RevokeSelfTokenRequest]) (*connect.Response[v1.RevokeSelfTokenResponse], error)
 	// SetDeliveryConfig configures the agent's event delivery mode.
 	// Supports three modes via oneof: webhook (HTTPS POST), websocket
-	// (persistent /ws/agent connection), or none (stop all delivery).
+	// (persistent /ws connection), or none (stop all delivery).
 	// Modes are mutually exclusive; setting one clears the other.
 	//
 	// Side effects (webhook mode):
