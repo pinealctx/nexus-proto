@@ -55,7 +55,10 @@ message SnUpdate {
 }
 
 // NonSnUpdate is a non-sequenced, ephemeral update pushed in real time.
-// Clients do not track sn for these.
+// Clients and agents do not track sn for these. Used for:
+//   - Stream DELTA (real-time text generation push)
+//   - CardActionAnswer (agent's toast/alert response to a card action)
+//   - CardActionPayload (user's card action submission, delivered to agent)
 message NonSnUpdate {
   // Update payload.
   oneof update {
@@ -63,18 +66,44 @@ message NonSnUpdate {
     MessageEnvelope message_envelope = 1;
     // Card action answer (toast/alert from agent, ephemeral).
     CardActionAnswer card_action_answer = 2;
+    // Card action submission from a user (delivered to agent, ephemeral).
+    CardActionPayload card_action = 3;
   }
 }
 
 // CardActionAnswer carries the agent's response to a card action.
 // Pushed as NonSnUpdate to the user who submitted the action.
 message CardActionAnswer {
-  // Action ID.
+  // Server-assigned action ID (matches CardActionPayload.action_id).
   string action_id = 1;
+  // Conversation where the card action was submitted.
+  int64 conversation_id = 2;
+  // Card message ID that the action belongs to.
+  int64 message_id = 3;
+  // Agent user ID that produced this answer.
+  int32 agent_user_id = 4;
   // Response text to display.
-  string text = 2;
+  string text = 5;
   // Whether to show as alert dialog (true) or toast (false).
-  bool show_alert = 3;
+  bool show_alert = 6;
+}
+
+// CardActionPayload contains an Adaptive Card Action.Submit event.
+// Pushed as NonSnUpdate to the agent that owns the card.
+// This is an ephemeral event — not sequenced and not persisted.
+message CardActionPayload {
+  // Server-assigned action ID (use in AnswerCardAction).
+  string action_id = 1;
+  // Conversation ID.
+  int64 conversation_id = 2;
+  // Card message ID.
+  int64 message_id = 3;
+  // User who submitted the action.
+  int32 sender_id = 4;
+  // Action data (JSON string from Action.Submit).
+  string action_data = 5;
+  // Action verb identifier.
+  string verb = 6;
 }
 
 // UpdateState holds the server's current sync state for a user.

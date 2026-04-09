@@ -2,8 +2,9 @@ syntax = "proto3";
 package api.v1;
 
 import "api/v1/auth_service.proto";
-import "shared/v1/gateway_common.proto";
+import "shared/v1/error_codes.proto";
 import "shared/v1/group.proto";
+import "shared/v1/options.proto";
 import "shared/v1/updates.proto";
 import "shared/v1/user.proto";
 
@@ -13,10 +14,10 @@ option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
 // Upstream (Client → Server)
 // ═══════════════════════════════════════════════════════════════════════
 
-// ClientFrame is the transport-agnostic upstream envelope. The long
-// connection is a push-only channel — clients send only authentication
-// and heartbeat frames upstream. All business requests go through
-// Connect RPC (HTTP).
+// ClientFrame is the transport-agnostic upstream envelope used by both
+// users and agents. The long connection is a push-only channel — clients
+// send only authentication and heartbeat frames upstream. All business
+// requests go through Connect RPC (HTTP).
 message ClientFrame {
   // Client-generated correlation ID. The server echoes this ID in the
   // corresponding ServerFrame response so the client can match them.
@@ -26,9 +27,10 @@ message ClientFrame {
   // Frame payload, determined by type.
   oneof payload {
     // Connection authentication. Server responds with ServerFrame.auth_response.
+    // Users send nxs_-prefixed tokens; agents send nxa_-prefixed tokens.
     AuthRequest auth_request = 10;
     // Heartbeat ping. Server responds with ServerFrame.heartbeat_pong.
-    shared.v1.HeartbeatPing heartbeat_ping = 11;
+    HeartbeatPing heartbeat_ping = 11;
   }
 }
 
@@ -46,8 +48,9 @@ enum ClientFrameType {
 // Downstream (Server → Client)
 // ═══════════════════════════════════════════════════════════════════════
 
-// ServerFrame is the transport-agnostic downstream envelope. Every message
-// sent by the server on the long connection is wrapped in a ServerFrame.
+// ServerFrame is the transport-agnostic downstream envelope used by both
+// users and agents. Every message sent by the server on the long
+// connection is wrapped in a ServerFrame.
 //
 // For response frames (auth_response, heartbeat_pong), the request_id
 // matches the originating ClientFrame.request_id.
@@ -62,15 +65,13 @@ message ServerFrame {
   // Frame payload, determined by type.
   oneof payload {
     // Authentication result. Response to ClientFrame.auth_request.
-    shared.v1.GatewayAuthResponse auth_response = 10;
-    // Update push.
+    GatewayAuthResponse auth_response = 10;
+    // Update push (SnUpdate or NonSnUpdate with related entity info).
     Update update = 11;
     // Heartbeat pong. Response to ClientFrame.heartbeat_ping.
-    shared.v1.HeartbeatPong heartbeat_pong = 12;
+    HeartbeatPong heartbeat_pong = 12;
     // Error response or connection-level error push.
-    shared.v1.GatewayErrorFrame error = 13;
-    // Card action answer push (toast/alert from agent).
-    CardActionAnswerPush card_action_answer = 14;
+    GatewayErrorFrame error = 13;
   }
 }
 
@@ -86,8 +87,6 @@ enum ServerFrameType {
   SERVER_FRAME_TYPE_HEARTBEAT_PONG = 3;
   // Error.
   SERVER_FRAME_TYPE_ERROR = 4;
-  // Card action answer (toast/alert from agent).
-  SERVER_FRAME_TYPE_CARD_ACTION_ANSWER = 5;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -97,12 +96,17 @@ enum ServerFrameType {
 // ── Authentication ──
 
 // AuthRequest is the long-connection authentication request frame.
+// Both users and agents use this message:
+//   - nxs_ prefix → user session token
+//   - nxa_ prefix → agent token
 message AuthRequest {
-  // Access token.
-  string token = 1;
-  // Client device information.
-  DeviceInput device_info = 2;
+  // Access token (nxs_ for users, nxa_ for agents).
+  string token = 1 [(shared.v1.sensitive) = true];
+  // Client device information (optional).
+  optional DeviceInput device_info = 2;
 }
+
+// ── Update ──
 
 // Update wraps an SnUpdate or NonSnUpdate with related entity info
 // for client-side rendering without extra lookups.
@@ -115,22 +119,44 @@ message Update {
   oneof update {
     // Sequenced update.
     shared.v1.SnUpdate sn_update = 10;
-    // Non-sequenced update (ephemeral, e.g. stream deltas).
+    // Non-sequenced update (ephemeral, e.g. stream deltas, card actions).
     shared.v1.NonSnUpdate non_sn_update = 11;
   }
 }
 
-// ── Card action answer ──
+// ═══════════════════════════════════════════════════════════════════════
+// Gateway common types (used by both upstream and downstream frames)
+// ═══════════════════════════════════════════════════════════════════════
 
-// CardActionAnswerPush is pushed when an agent responds to an Adaptive
-// Card Action.Submit via AnswerCardAction. The client displays the text
-// as a toast or alert dialog depending on show_alert.
-// This is an ephemeral notification, not persisted as a message.
-message CardActionAnswerPush {
-  // Action ID that this answer corresponds to.
-  string action_id = 1;
-  // Response text to display.
-  string text = 2;
-  // Whether to show as alert dialog (true) or toast (false).
-  bool show_alert = 3;
+// HeartbeatPing is an empty keepalive frame sent by the client at
+// regular intervals. Used by both user and agent WebSocket connections.
+message HeartbeatPing {}
+
+// HeartbeatPong is the server response to a HeartbeatPing.
+message HeartbeatPong {
+  // Server timestamp (Unix ms). Clients can use this for clock drift
+  // estimation.
+  int64 server_time = 1;
+}
+
+// GatewayAuthResponse carries the authentication result for both user
+// and agent WebSocket connections.
+message GatewayAuthResponse {
+  // Whether authentication succeeded.
+  bool success = 1;
+  // Authenticated user ID (for agents this is agent_user_id).
+  // Only meaningful when success = true.
+  int32 user_id = 2;
+  // Error detail on failure. Only present when success = false.
+  // Uses the same ErrorDetail structure as GatewayErrorFrame for
+  // consistent error handling across all gateway responses.
+  shared.v1.ErrorDetail error = 3;
+}
+
+// GatewayErrorFrame carries connection-level error information.
+message GatewayErrorFrame {
+  // Structured error detail with error_code and error_name.
+  shared.v1.ErrorDetail error = 1;
+  // Whether the client should close the connection after this error.
+  bool fatal = 2;
 }

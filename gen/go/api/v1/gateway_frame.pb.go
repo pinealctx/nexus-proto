@@ -89,8 +89,6 @@ const (
 	ServerFrameType_SERVER_FRAME_TYPE_HEARTBEAT_PONG ServerFrameType = 3
 	// Error.
 	ServerFrameType_SERVER_FRAME_TYPE_ERROR ServerFrameType = 4
-	// Card action answer (toast/alert from agent).
-	ServerFrameType_SERVER_FRAME_TYPE_CARD_ACTION_ANSWER ServerFrameType = 5
 )
 
 // Enum value maps for ServerFrameType.
@@ -101,15 +99,13 @@ var (
 		2: "SERVER_FRAME_TYPE_UPDATE",
 		3: "SERVER_FRAME_TYPE_HEARTBEAT_PONG",
 		4: "SERVER_FRAME_TYPE_ERROR",
-		5: "SERVER_FRAME_TYPE_CARD_ACTION_ANSWER",
 	}
 	ServerFrameType_value = map[string]int32{
-		"SERVER_FRAME_TYPE_UNSPECIFIED":        0,
-		"SERVER_FRAME_TYPE_AUTH_RESPONSE":      1,
-		"SERVER_FRAME_TYPE_UPDATE":             2,
-		"SERVER_FRAME_TYPE_HEARTBEAT_PONG":     3,
-		"SERVER_FRAME_TYPE_ERROR":              4,
-		"SERVER_FRAME_TYPE_CARD_ACTION_ANSWER": 5,
+		"SERVER_FRAME_TYPE_UNSPECIFIED":    0,
+		"SERVER_FRAME_TYPE_AUTH_RESPONSE":  1,
+		"SERVER_FRAME_TYPE_UPDATE":         2,
+		"SERVER_FRAME_TYPE_HEARTBEAT_PONG": 3,
+		"SERVER_FRAME_TYPE_ERROR":          4,
 	}
 )
 
@@ -140,10 +136,10 @@ func (ServerFrameType) EnumDescriptor() ([]byte, []int) {
 	return file_api_v1_gateway_frame_proto_rawDescGZIP(), []int{1}
 }
 
-// ClientFrame is the transport-agnostic upstream envelope. The long
-// connection is a push-only channel — clients send only authentication
-// and heartbeat frames upstream. All business requests go through
-// Connect RPC (HTTP).
+// ClientFrame is the transport-agnostic upstream envelope used by both
+// users and agents. The long connection is a push-only channel — clients
+// send only authentication and heartbeat frames upstream. All business
+// requests go through Connect RPC (HTTP).
 type ClientFrame struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Client-generated correlation ID. The server echoes this ID in the
@@ -222,7 +218,7 @@ func (x *ClientFrame) GetAuthRequest() *AuthRequest {
 	return nil
 }
 
-func (x *ClientFrame) GetHeartbeatPing() *v1.HeartbeatPing {
+func (x *ClientFrame) GetHeartbeatPing() *HeartbeatPing {
 	if x != nil {
 		if x, ok := x.Payload.(*ClientFrame_HeartbeatPing); ok {
 			return x.HeartbeatPing
@@ -237,20 +233,22 @@ type isClientFrame_Payload interface {
 
 type ClientFrame_AuthRequest struct {
 	// Connection authentication. Server responds with ServerFrame.auth_response.
+	// Users send nxs_-prefixed tokens; agents send nxa_-prefixed tokens.
 	AuthRequest *AuthRequest `protobuf:"bytes,10,opt,name=auth_request,json=authRequest,proto3,oneof"`
 }
 
 type ClientFrame_HeartbeatPing struct {
 	// Heartbeat ping. Server responds with ServerFrame.heartbeat_pong.
-	HeartbeatPing *v1.HeartbeatPing `protobuf:"bytes,11,opt,name=heartbeat_ping,json=heartbeatPing,proto3,oneof"`
+	HeartbeatPing *HeartbeatPing `protobuf:"bytes,11,opt,name=heartbeat_ping,json=heartbeatPing,proto3,oneof"`
 }
 
 func (*ClientFrame_AuthRequest) isClientFrame_Payload() {}
 
 func (*ClientFrame_HeartbeatPing) isClientFrame_Payload() {}
 
-// ServerFrame is the transport-agnostic downstream envelope. Every message
-// sent by the server on the long connection is wrapped in a ServerFrame.
+// ServerFrame is the transport-agnostic downstream envelope used by both
+// users and agents. Every message sent by the server on the long
+// connection is wrapped in a ServerFrame.
 //
 // For response frames (auth_response, heartbeat_pong), the request_id
 // matches the originating ClientFrame.request_id.
@@ -271,7 +269,6 @@ type ServerFrame struct {
 	//	*ServerFrame_Update
 	//	*ServerFrame_HeartbeatPong
 	//	*ServerFrame_Error
-	//	*ServerFrame_CardActionAnswer
 	Payload       isServerFrame_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -328,7 +325,7 @@ func (x *ServerFrame) GetPayload() isServerFrame_Payload {
 	return nil
 }
 
-func (x *ServerFrame) GetAuthResponse() *v1.GatewayAuthResponse {
+func (x *ServerFrame) GetAuthResponse() *GatewayAuthResponse {
 	if x != nil {
 		if x, ok := x.Payload.(*ServerFrame_AuthResponse); ok {
 			return x.AuthResponse
@@ -346,7 +343,7 @@ func (x *ServerFrame) GetUpdate() *Update {
 	return nil
 }
 
-func (x *ServerFrame) GetHeartbeatPong() *v1.HeartbeatPong {
+func (x *ServerFrame) GetHeartbeatPong() *HeartbeatPong {
 	if x != nil {
 		if x, ok := x.Payload.(*ServerFrame_HeartbeatPong); ok {
 			return x.HeartbeatPong
@@ -355,19 +352,10 @@ func (x *ServerFrame) GetHeartbeatPong() *v1.HeartbeatPong {
 	return nil
 }
 
-func (x *ServerFrame) GetError() *v1.GatewayErrorFrame {
+func (x *ServerFrame) GetError() *GatewayErrorFrame {
 	if x != nil {
 		if x, ok := x.Payload.(*ServerFrame_Error); ok {
 			return x.Error
-		}
-	}
-	return nil
-}
-
-func (x *ServerFrame) GetCardActionAnswer() *CardActionAnswerPush {
-	if x != nil {
-		if x, ok := x.Payload.(*ServerFrame_CardActionAnswer); ok {
-			return x.CardActionAnswer
 		}
 	}
 	return nil
@@ -379,27 +367,22 @@ type isServerFrame_Payload interface {
 
 type ServerFrame_AuthResponse struct {
 	// Authentication result. Response to ClientFrame.auth_request.
-	AuthResponse *v1.GatewayAuthResponse `protobuf:"bytes,10,opt,name=auth_response,json=authResponse,proto3,oneof"`
+	AuthResponse *GatewayAuthResponse `protobuf:"bytes,10,opt,name=auth_response,json=authResponse,proto3,oneof"`
 }
 
 type ServerFrame_Update struct {
-	// Update push.
+	// Update push (SnUpdate or NonSnUpdate with related entity info).
 	Update *Update `protobuf:"bytes,11,opt,name=update,proto3,oneof"`
 }
 
 type ServerFrame_HeartbeatPong struct {
 	// Heartbeat pong. Response to ClientFrame.heartbeat_ping.
-	HeartbeatPong *v1.HeartbeatPong `protobuf:"bytes,12,opt,name=heartbeat_pong,json=heartbeatPong,proto3,oneof"`
+	HeartbeatPong *HeartbeatPong `protobuf:"bytes,12,opt,name=heartbeat_pong,json=heartbeatPong,proto3,oneof"`
 }
 
 type ServerFrame_Error struct {
 	// Error response or connection-level error push.
-	Error *v1.GatewayErrorFrame `protobuf:"bytes,13,opt,name=error,proto3,oneof"`
-}
-
-type ServerFrame_CardActionAnswer struct {
-	// Card action answer push (toast/alert from agent).
-	CardActionAnswer *CardActionAnswerPush `protobuf:"bytes,14,opt,name=card_action_answer,json=cardActionAnswer,proto3,oneof"`
+	Error *GatewayErrorFrame `protobuf:"bytes,13,opt,name=error,proto3,oneof"`
 }
 
 func (*ServerFrame_AuthResponse) isServerFrame_Payload() {}
@@ -410,15 +393,16 @@ func (*ServerFrame_HeartbeatPong) isServerFrame_Payload() {}
 
 func (*ServerFrame_Error) isServerFrame_Payload() {}
 
-func (*ServerFrame_CardActionAnswer) isServerFrame_Payload() {}
-
 // AuthRequest is the long-connection authentication request frame.
+// Both users and agents use this message:
+//   - nxs_ prefix → user session token
+//   - nxa_ prefix → agent token
 type AuthRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Access token.
+	// Access token (nxs_ for users, nxa_ for agents).
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	// Client device information.
-	DeviceInfo    *DeviceInput `protobuf:"bytes,2,opt,name=device_info,json=deviceInfo,proto3" json:"device_info,omitempty"`
+	// Client device information (optional).
+	DeviceInfo    *DeviceInput `protobuf:"bytes,2,opt,name=device_info,json=deviceInfo,proto3,oneof" json:"device_info,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -565,7 +549,7 @@ type Update_SnUpdate struct {
 }
 
 type Update_NonSnUpdate struct {
-	// Non-sequenced update (ephemeral, e.g. stream deltas).
+	// Non-sequenced update (ephemeral, e.g. stream deltas, card actions).
 	NonSnUpdate *v1.NonSnUpdate `protobuf:"bytes,11,opt,name=non_sn_update,json=nonSnUpdate,proto3,oneof"`
 }
 
@@ -573,36 +557,28 @@ func (*Update_SnUpdate) isUpdate_Update() {}
 
 func (*Update_NonSnUpdate) isUpdate_Update() {}
 
-// CardActionAnswerPush is pushed when an agent responds to an Adaptive
-// Card Action.Submit via AnswerCardAction. The client displays the text
-// as a toast or alert dialog depending on show_alert.
-// This is an ephemeral notification, not persisted as a message.
-type CardActionAnswerPush struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Action ID that this answer corresponds to.
-	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
-	// Response text to display.
-	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	// Whether to show as alert dialog (true) or toast (false).
-	ShowAlert     bool `protobuf:"varint,3,opt,name=show_alert,json=showAlert,proto3" json:"show_alert,omitempty"`
+// HeartbeatPing is an empty keepalive frame sent by the client at
+// regular intervals. Used by both user and agent WebSocket connections.
+type HeartbeatPing struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CardActionAnswerPush) Reset() {
-	*x = CardActionAnswerPush{}
+func (x *HeartbeatPing) Reset() {
+	*x = HeartbeatPing{}
 	mi := &file_api_v1_gateway_frame_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CardActionAnswerPush) String() string {
+func (x *HeartbeatPing) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CardActionAnswerPush) ProtoMessage() {}
+func (*HeartbeatPing) ProtoMessage() {}
 
-func (x *CardActionAnswerPush) ProtoReflect() protoreflect.Message {
+func (x *HeartbeatPing) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_gateway_frame_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -614,28 +590,177 @@ func (x *CardActionAnswerPush) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CardActionAnswerPush.ProtoReflect.Descriptor instead.
-func (*CardActionAnswerPush) Descriptor() ([]byte, []int) {
+// Deprecated: Use HeartbeatPing.ProtoReflect.Descriptor instead.
+func (*HeartbeatPing) Descriptor() ([]byte, []int) {
 	return file_api_v1_gateway_frame_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *CardActionAnswerPush) GetActionId() string {
-	if x != nil {
-		return x.ActionId
-	}
-	return ""
+// HeartbeatPong is the server response to a HeartbeatPing.
+type HeartbeatPong struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Server timestamp (Unix ms). Clients can use this for clock drift
+	// estimation.
+	ServerTime    int64 `protobuf:"varint,1,opt,name=server_time,json=serverTime,proto3" json:"server_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CardActionAnswerPush) GetText() string {
-	if x != nil {
-		return x.Text
-	}
-	return ""
+func (x *HeartbeatPong) Reset() {
+	*x = HeartbeatPong{}
+	mi := &file_api_v1_gateway_frame_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
-func (x *CardActionAnswerPush) GetShowAlert() bool {
+func (x *HeartbeatPong) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeartbeatPong) ProtoMessage() {}
+
+func (x *HeartbeatPong) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_gateway_frame_proto_msgTypes[5]
 	if x != nil {
-		return x.ShowAlert
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeartbeatPong.ProtoReflect.Descriptor instead.
+func (*HeartbeatPong) Descriptor() ([]byte, []int) {
+	return file_api_v1_gateway_frame_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *HeartbeatPong) GetServerTime() int64 {
+	if x != nil {
+		return x.ServerTime
+	}
+	return 0
+}
+
+// GatewayAuthResponse carries the authentication result for both user
+// and agent WebSocket connections.
+type GatewayAuthResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether authentication succeeded.
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	// Authenticated user ID (for agents this is agent_user_id).
+	// Only meaningful when success = true.
+	UserId int32 `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Error detail on failure. Only present when success = false.
+	// Uses the same ErrorDetail structure as GatewayErrorFrame for
+	// consistent error handling across all gateway responses.
+	Error         *v1.ErrorDetail `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GatewayAuthResponse) Reset() {
+	*x = GatewayAuthResponse{}
+	mi := &file_api_v1_gateway_frame_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GatewayAuthResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewayAuthResponse) ProtoMessage() {}
+
+func (x *GatewayAuthResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_gateway_frame_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewayAuthResponse.ProtoReflect.Descriptor instead.
+func (*GatewayAuthResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_gateway_frame_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GatewayAuthResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *GatewayAuthResponse) GetUserId() int32 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *GatewayAuthResponse) GetError() *v1.ErrorDetail {
+	if x != nil {
+		return x.Error
+	}
+	return nil
+}
+
+// GatewayErrorFrame carries connection-level error information.
+type GatewayErrorFrame struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Structured error detail with error_code and error_name.
+	Error *v1.ErrorDetail `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	// Whether the client should close the connection after this error.
+	Fatal         bool `protobuf:"varint,2,opt,name=fatal,proto3" json:"fatal,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GatewayErrorFrame) Reset() {
+	*x = GatewayErrorFrame{}
+	mi := &file_api_v1_gateway_frame_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GatewayErrorFrame) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewayErrorFrame) ProtoMessage() {}
+
+func (x *GatewayErrorFrame) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_gateway_frame_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewayErrorFrame.ProtoReflect.Descriptor instead.
+func (*GatewayErrorFrame) Descriptor() ([]byte, []int) {
+	return file_api_v1_gateway_frame_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GatewayErrorFrame) GetError() *v1.ErrorDetail {
+	if x != nil {
+		return x.Error
+	}
+	return nil
+}
+
+func (x *GatewayErrorFrame) GetFatal() bool {
+	if x != nil {
+		return x.Fatal
 	}
 	return false
 }
@@ -644,53 +769,58 @@ var File_api_v1_gateway_frame_proto protoreflect.FileDescriptor
 
 const file_api_v1_gateway_frame_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapi/v1/gateway_frame.proto\x12\x06api.v1\x1a\x19api/v1/auth_service.proto\x1a\x1eshared/v1/gateway_common.proto\x1a\x15shared/v1/group.proto\x1a\x17shared/v1/updates.proto\x1a\x14shared/v1/user.proto\"\xe1\x01\n" +
+	"\x1aapi/v1/gateway_frame.proto\x12\x06api.v1\x1a\x19api/v1/auth_service.proto\x1a\x1bshared/v1/error_codes.proto\x1a\x15shared/v1/group.proto\x1a\x17shared/v1/options.proto\x1a\x17shared/v1/updates.proto\x1a\x14shared/v1/user.proto\"\xde\x01\n" +
 	"\vClientFrame\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\x03R\trequestId\x12+\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x17.api.v1.ClientFrameTypeR\x04type\x128\n" +
 	"\fauth_request\x18\n" +
-	" \x01(\v2\x13.api.v1.AuthRequestH\x00R\vauthRequest\x12A\n" +
-	"\x0eheartbeat_ping\x18\v \x01(\v2\x18.shared.v1.HeartbeatPingH\x00R\rheartbeatPingB\t\n" +
-	"\apayload\"\x9c\x03\n" +
+	" \x01(\v2\x13.api.v1.AuthRequestH\x00R\vauthRequest\x12>\n" +
+	"\x0eheartbeat_ping\x18\v \x01(\v2\x15.api.v1.HeartbeatPingH\x00R\rheartbeatPingB\t\n" +
+	"\apayload\"\xc5\x02\n" +
 	"\vServerFrame\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\x03R\trequestId\x12+\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x17.api.v1.ServerFrameTypeR\x04type\x12E\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x17.api.v1.ServerFrameTypeR\x04type\x12B\n" +
 	"\rauth_response\x18\n" +
-	" \x01(\v2\x1e.shared.v1.GatewayAuthResponseH\x00R\fauthResponse\x12(\n" +
-	"\x06update\x18\v \x01(\v2\x0e.api.v1.UpdateH\x00R\x06update\x12A\n" +
-	"\x0eheartbeat_pong\x18\f \x01(\v2\x18.shared.v1.HeartbeatPongH\x00R\rheartbeatPong\x124\n" +
-	"\x05error\x18\r \x01(\v2\x1c.shared.v1.GatewayErrorFrameH\x00R\x05error\x12L\n" +
-	"\x12card_action_answer\x18\x0e \x01(\v2\x1c.api.v1.CardActionAnswerPushH\x00R\x10cardActionAnswerB\t\n" +
-	"\apayload\"Y\n" +
-	"\vAuthRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x124\n" +
-	"\vdevice_info\x18\x02 \x01(\v2\x13.api.v1.DeviceInputR\n" +
-	"deviceInfo\"\xdd\x01\n" +
+	" \x01(\v2\x1b.api.v1.GatewayAuthResponseH\x00R\fauthResponse\x12(\n" +
+	"\x06update\x18\v \x01(\v2\x0e.api.v1.UpdateH\x00R\x06update\x12>\n" +
+	"\x0eheartbeat_pong\x18\f \x01(\v2\x15.api.v1.HeartbeatPongH\x00R\rheartbeatPong\x121\n" +
+	"\x05error\x18\r \x01(\v2\x19.api.v1.GatewayErrorFrameH\x00R\x05errorB\t\n" +
+	"\apayload\"t\n" +
+	"\vAuthRequest\x12\x1a\n" +
+	"\x05token\x18\x01 \x01(\tB\x04\x90\xb5\x18\x01R\x05token\x129\n" +
+	"\vdevice_info\x18\x02 \x01(\v2\x13.api.v1.DeviceInputH\x00R\n" +
+	"deviceInfo\x88\x01\x01B\x0e\n" +
+	"\f_device_info\"\xdd\x01\n" +
 	"\x06Update\x12)\n" +
 	"\x05users\x18\x01 \x03(\v2\x13.shared.v1.UserInfoR\x05users\x12,\n" +
 	"\x06groups\x18\x02 \x03(\v2\x14.shared.v1.GroupInfoR\x06groups\x122\n" +
 	"\tsn_update\x18\n" +
 	" \x01(\v2\x13.shared.v1.SnUpdateH\x00R\bsnUpdate\x12<\n" +
 	"\rnon_sn_update\x18\v \x01(\v2\x16.shared.v1.NonSnUpdateH\x00R\vnonSnUpdateB\b\n" +
-	"\x06update\"f\n" +
-	"\x14CardActionAnswerPush\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text\x12\x1d\n" +
-	"\n" +
-	"show_alert\x18\x03 \x01(\bR\tshowAlert*~\n" +
+	"\x06update\"\x0f\n" +
+	"\rHeartbeatPing\"0\n" +
+	"\rHeartbeatPong\x12\x1f\n" +
+	"\vserver_time\x18\x01 \x01(\x03R\n" +
+	"serverTime\"v\n" +
+	"\x13GatewayAuthResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x05R\x06userId\x12,\n" +
+	"\x05error\x18\x03 \x01(\v2\x16.shared.v1.ErrorDetailR\x05error\"W\n" +
+	"\x11GatewayErrorFrame\x12,\n" +
+	"\x05error\x18\x01 \x01(\v2\x16.shared.v1.ErrorDetailR\x05error\x12\x14\n" +
+	"\x05fatal\x18\x02 \x01(\bR\x05fatal*~\n" +
 	"\x0fClientFrameType\x12!\n" +
 	"\x1dCLIENT_FRAME_TYPE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eCLIENT_FRAME_TYPE_AUTH_REQUEST\x10\x01\x12$\n" +
-	" CLIENT_FRAME_TYPE_HEARTBEAT_PING\x10\x02*\xe4\x01\n" +
+	" CLIENT_FRAME_TYPE_HEARTBEAT_PING\x10\x02*\xba\x01\n" +
 	"\x0fServerFrameType\x12!\n" +
 	"\x1dSERVER_FRAME_TYPE_UNSPECIFIED\x10\x00\x12#\n" +
 	"\x1fSERVER_FRAME_TYPE_AUTH_RESPONSE\x10\x01\x12\x1c\n" +
 	"\x18SERVER_FRAME_TYPE_UPDATE\x10\x02\x12$\n" +
 	" SERVER_FRAME_TYPE_HEARTBEAT_PONG\x10\x03\x12\x1b\n" +
-	"\x17SERVER_FRAME_TYPE_ERROR\x10\x04\x12(\n" +
-	"$SERVER_FRAME_TYPE_CARD_ACTION_ANSWER\x10\x05B\x8e\x01\n" +
+	"\x17SERVER_FRAME_TYPE_ERROR\x10\x04B\x8e\x01\n" +
 	"\n" +
 	"com.api.v1B\x11GatewayFrameProtoP\x01Z4github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1\xa2\x02\x03AXX\xaa\x02\x06Api.V1\xca\x02\x06Api\\V1\xe2\x02\x12Api\\V1\\GPBMetadata\xea\x02\aApi::V1b\x06proto3"
 
@@ -707,45 +837,46 @@ func file_api_v1_gateway_frame_proto_rawDescGZIP() []byte {
 }
 
 var file_api_v1_gateway_frame_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_api_v1_gateway_frame_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_api_v1_gateway_frame_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_api_v1_gateway_frame_proto_goTypes = []any{
-	(ClientFrameType)(0),           // 0: api.v1.ClientFrameType
-	(ServerFrameType)(0),           // 1: api.v1.ServerFrameType
-	(*ClientFrame)(nil),            // 2: api.v1.ClientFrame
-	(*ServerFrame)(nil),            // 3: api.v1.ServerFrame
-	(*AuthRequest)(nil),            // 4: api.v1.AuthRequest
-	(*Update)(nil),                 // 5: api.v1.Update
-	(*CardActionAnswerPush)(nil),   // 6: api.v1.CardActionAnswerPush
-	(*v1.HeartbeatPing)(nil),       // 7: shared.v1.HeartbeatPing
-	(*v1.GatewayAuthResponse)(nil), // 8: shared.v1.GatewayAuthResponse
-	(*v1.HeartbeatPong)(nil),       // 9: shared.v1.HeartbeatPong
-	(*v1.GatewayErrorFrame)(nil),   // 10: shared.v1.GatewayErrorFrame
-	(*DeviceInput)(nil),            // 11: api.v1.DeviceInput
-	(*v1.UserInfo)(nil),            // 12: shared.v1.UserInfo
-	(*v1.GroupInfo)(nil),           // 13: shared.v1.GroupInfo
-	(*v1.SnUpdate)(nil),            // 14: shared.v1.SnUpdate
-	(*v1.NonSnUpdate)(nil),         // 15: shared.v1.NonSnUpdate
+	(ClientFrameType)(0),        // 0: api.v1.ClientFrameType
+	(ServerFrameType)(0),        // 1: api.v1.ServerFrameType
+	(*ClientFrame)(nil),         // 2: api.v1.ClientFrame
+	(*ServerFrame)(nil),         // 3: api.v1.ServerFrame
+	(*AuthRequest)(nil),         // 4: api.v1.AuthRequest
+	(*Update)(nil),              // 5: api.v1.Update
+	(*HeartbeatPing)(nil),       // 6: api.v1.HeartbeatPing
+	(*HeartbeatPong)(nil),       // 7: api.v1.HeartbeatPong
+	(*GatewayAuthResponse)(nil), // 8: api.v1.GatewayAuthResponse
+	(*GatewayErrorFrame)(nil),   // 9: api.v1.GatewayErrorFrame
+	(*DeviceInput)(nil),         // 10: api.v1.DeviceInput
+	(*v1.UserInfo)(nil),         // 11: shared.v1.UserInfo
+	(*v1.GroupInfo)(nil),        // 12: shared.v1.GroupInfo
+	(*v1.SnUpdate)(nil),         // 13: shared.v1.SnUpdate
+	(*v1.NonSnUpdate)(nil),      // 14: shared.v1.NonSnUpdate
+	(*v1.ErrorDetail)(nil),      // 15: shared.v1.ErrorDetail
 }
 var file_api_v1_gateway_frame_proto_depIdxs = []int32{
 	0,  // 0: api.v1.ClientFrame.type:type_name -> api.v1.ClientFrameType
 	4,  // 1: api.v1.ClientFrame.auth_request:type_name -> api.v1.AuthRequest
-	7,  // 2: api.v1.ClientFrame.heartbeat_ping:type_name -> shared.v1.HeartbeatPing
+	6,  // 2: api.v1.ClientFrame.heartbeat_ping:type_name -> api.v1.HeartbeatPing
 	1,  // 3: api.v1.ServerFrame.type:type_name -> api.v1.ServerFrameType
-	8,  // 4: api.v1.ServerFrame.auth_response:type_name -> shared.v1.GatewayAuthResponse
+	8,  // 4: api.v1.ServerFrame.auth_response:type_name -> api.v1.GatewayAuthResponse
 	5,  // 5: api.v1.ServerFrame.update:type_name -> api.v1.Update
-	9,  // 6: api.v1.ServerFrame.heartbeat_pong:type_name -> shared.v1.HeartbeatPong
-	10, // 7: api.v1.ServerFrame.error:type_name -> shared.v1.GatewayErrorFrame
-	6,  // 8: api.v1.ServerFrame.card_action_answer:type_name -> api.v1.CardActionAnswerPush
-	11, // 9: api.v1.AuthRequest.device_info:type_name -> api.v1.DeviceInput
-	12, // 10: api.v1.Update.users:type_name -> shared.v1.UserInfo
-	13, // 11: api.v1.Update.groups:type_name -> shared.v1.GroupInfo
-	14, // 12: api.v1.Update.sn_update:type_name -> shared.v1.SnUpdate
-	15, // 13: api.v1.Update.non_sn_update:type_name -> shared.v1.NonSnUpdate
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	7,  // 6: api.v1.ServerFrame.heartbeat_pong:type_name -> api.v1.HeartbeatPong
+	9,  // 7: api.v1.ServerFrame.error:type_name -> api.v1.GatewayErrorFrame
+	10, // 8: api.v1.AuthRequest.device_info:type_name -> api.v1.DeviceInput
+	11, // 9: api.v1.Update.users:type_name -> shared.v1.UserInfo
+	12, // 10: api.v1.Update.groups:type_name -> shared.v1.GroupInfo
+	13, // 11: api.v1.Update.sn_update:type_name -> shared.v1.SnUpdate
+	14, // 12: api.v1.Update.non_sn_update:type_name -> shared.v1.NonSnUpdate
+	15, // 13: api.v1.GatewayAuthResponse.error:type_name -> shared.v1.ErrorDetail
+	15, // 14: api.v1.GatewayErrorFrame.error:type_name -> shared.v1.ErrorDetail
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_gateway_frame_proto_init() }
@@ -763,8 +894,8 @@ func file_api_v1_gateway_frame_proto_init() {
 		(*ServerFrame_Update)(nil),
 		(*ServerFrame_HeartbeatPong)(nil),
 		(*ServerFrame_Error)(nil),
-		(*ServerFrame_CardActionAnswer)(nil),
 	}
+	file_api_v1_gateway_frame_proto_msgTypes[2].OneofWrappers = []any{}
 	file_api_v1_gateway_frame_proto_msgTypes[3].OneofWrappers = []any{
 		(*Update_SnUpdate)(nil),
 		(*Update_NonSnUpdate)(nil),
@@ -775,7 +906,7 @@ func file_api_v1_gateway_frame_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_gateway_frame_proto_rawDesc), len(file_api_v1_gateway_frame_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   5,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

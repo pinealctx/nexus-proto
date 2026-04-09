@@ -376,7 +376,10 @@ func (*SnUpdate_MessageDeleted) isSnUpdate_Update() {}
 func (*SnUpdate_ContactAdded) isSnUpdate_Update() {}
 
 // NonSnUpdate is a non-sequenced, ephemeral update pushed in real time.
-// Clients do not track sn for these.
+// Clients and agents do not track sn for these. Used for:
+//   - Stream DELTA (real-time text generation push)
+//   - CardActionAnswer (agent's toast/alert response to a card action)
+//   - CardActionPayload (user's card action submission, delivered to agent)
 type NonSnUpdate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Update payload.
@@ -385,6 +388,7 @@ type NonSnUpdate struct {
 	//
 	//	*NonSnUpdate_MessageEnvelope
 	//	*NonSnUpdate_CardActionAnswer
+	//	*NonSnUpdate_CardAction
 	Update        isNonSnUpdate_Update `protobuf_oneof:"update"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -445,6 +449,15 @@ func (x *NonSnUpdate) GetCardActionAnswer() *CardActionAnswer {
 	return nil
 }
 
+func (x *NonSnUpdate) GetCardAction() *CardActionPayload {
+	if x != nil {
+		if x, ok := x.Update.(*NonSnUpdate_CardAction); ok {
+			return x.CardAction
+		}
+	}
+	return nil
+}
+
 type isNonSnUpdate_Update interface {
 	isNonSnUpdate_Update()
 }
@@ -459,20 +472,33 @@ type NonSnUpdate_CardActionAnswer struct {
 	CardActionAnswer *CardActionAnswer `protobuf:"bytes,2,opt,name=card_action_answer,json=cardActionAnswer,proto3,oneof"`
 }
 
+type NonSnUpdate_CardAction struct {
+	// Card action submission from a user (delivered to agent, ephemeral).
+	CardAction *CardActionPayload `protobuf:"bytes,3,opt,name=card_action,json=cardAction,proto3,oneof"`
+}
+
 func (*NonSnUpdate_MessageEnvelope) isNonSnUpdate_Update() {}
 
 func (*NonSnUpdate_CardActionAnswer) isNonSnUpdate_Update() {}
+
+func (*NonSnUpdate_CardAction) isNonSnUpdate_Update() {}
 
 // CardActionAnswer carries the agent's response to a card action.
 // Pushed as NonSnUpdate to the user who submitted the action.
 type CardActionAnswer struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Action ID.
+	// Server-assigned action ID (matches CardActionPayload.action_id).
 	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	// Conversation where the card action was submitted.
+	ConversationId int64 `protobuf:"varint,2,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
+	// Card message ID that the action belongs to.
+	MessageId int64 `protobuf:"varint,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	// Agent user ID that produced this answer.
+	AgentUserId int32 `protobuf:"varint,4,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
 	// Response text to display.
-	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	Text string `protobuf:"bytes,5,opt,name=text,proto3" json:"text,omitempty"`
 	// Whether to show as alert dialog (true) or toast (false).
-	ShowAlert     bool `protobuf:"varint,3,opt,name=show_alert,json=showAlert,proto3" json:"show_alert,omitempty"`
+	ShowAlert     bool `protobuf:"varint,6,opt,name=show_alert,json=showAlert,proto3" json:"show_alert,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -514,6 +540,27 @@ func (x *CardActionAnswer) GetActionId() string {
 	return ""
 }
 
+func (x *CardActionAnswer) GetConversationId() int64 {
+	if x != nil {
+		return x.ConversationId
+	}
+	return 0
+}
+
+func (x *CardActionAnswer) GetMessageId() int64 {
+	if x != nil {
+		return x.MessageId
+	}
+	return 0
+}
+
+func (x *CardActionAnswer) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
 func (x *CardActionAnswer) GetText() string {
 	if x != nil {
 		return x.Text
@@ -528,6 +575,99 @@ func (x *CardActionAnswer) GetShowAlert() bool {
 	return false
 }
 
+// CardActionPayload contains an Adaptive Card Action.Submit event.
+// Pushed as NonSnUpdate to the agent that owns the card.
+// This is an ephemeral event — not sequenced and not persisted.
+type CardActionPayload struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Server-assigned action ID (use in AnswerCardAction).
+	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	// Conversation ID.
+	ConversationId int64 `protobuf:"varint,2,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
+	// Card message ID.
+	MessageId int64 `protobuf:"varint,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	// User who submitted the action.
+	SenderId int32 `protobuf:"varint,4,opt,name=sender_id,json=senderId,proto3" json:"sender_id,omitempty"`
+	// Action data (JSON string from Action.Submit).
+	ActionData string `protobuf:"bytes,5,opt,name=action_data,json=actionData,proto3" json:"action_data,omitempty"`
+	// Action verb identifier.
+	Verb          string `protobuf:"bytes,6,opt,name=verb,proto3" json:"verb,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CardActionPayload) Reset() {
+	*x = CardActionPayload{}
+	mi := &file_shared_v1_updates_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CardActionPayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CardActionPayload) ProtoMessage() {}
+
+func (x *CardActionPayload) ProtoReflect() protoreflect.Message {
+	mi := &file_shared_v1_updates_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CardActionPayload.ProtoReflect.Descriptor instead.
+func (*CardActionPayload) Descriptor() ([]byte, []int) {
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CardActionPayload) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *CardActionPayload) GetConversationId() int64 {
+	if x != nil {
+		return x.ConversationId
+	}
+	return 0
+}
+
+func (x *CardActionPayload) GetMessageId() int64 {
+	if x != nil {
+		return x.MessageId
+	}
+	return 0
+}
+
+func (x *CardActionPayload) GetSenderId() int32 {
+	if x != nil {
+		return x.SenderId
+	}
+	return 0
+}
+
+func (x *CardActionPayload) GetActionData() string {
+	if x != nil {
+		return x.ActionData
+	}
+	return ""
+}
+
+func (x *CardActionPayload) GetVerb() string {
+	if x != nil {
+		return x.Verb
+	}
+	return ""
+}
+
 // UpdateState holds the server's current sync state for a user.
 type UpdateState struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -539,7 +679,7 @@ type UpdateState struct {
 
 func (x *UpdateState) Reset() {
 	*x = UpdateState{}
-	mi := &file_shared_v1_updates_proto_msgTypes[3]
+	mi := &file_shared_v1_updates_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -551,7 +691,7 @@ func (x *UpdateState) String() string {
 func (*UpdateState) ProtoMessage() {}
 
 func (x *UpdateState) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[3]
+	mi := &file_shared_v1_updates_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -564,7 +704,7 @@ func (x *UpdateState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateState.ProtoReflect.Descriptor instead.
 func (*UpdateState) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{3}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *UpdateState) GetLatestSn() int32 {
@@ -588,7 +728,7 @@ type FriendRequestReceivedEvent struct {
 
 func (x *FriendRequestReceivedEvent) Reset() {
 	*x = FriendRequestReceivedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[4]
+	mi := &file_shared_v1_updates_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -600,7 +740,7 @@ func (x *FriendRequestReceivedEvent) String() string {
 func (*FriendRequestReceivedEvent) ProtoMessage() {}
 
 func (x *FriendRequestReceivedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[4]
+	mi := &file_shared_v1_updates_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -613,7 +753,7 @@ func (x *FriendRequestReceivedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FriendRequestReceivedEvent.ProtoReflect.Descriptor instead.
 func (*FriendRequestReceivedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{4}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *FriendRequestReceivedEvent) GetRequest() *PendingRequestItem {
@@ -637,7 +777,7 @@ type FriendRequestAcceptedEvent struct {
 
 func (x *FriendRequestAcceptedEvent) Reset() {
 	*x = FriendRequestAcceptedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[5]
+	mi := &file_shared_v1_updates_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -649,7 +789,7 @@ func (x *FriendRequestAcceptedEvent) String() string {
 func (*FriendRequestAcceptedEvent) ProtoMessage() {}
 
 func (x *FriendRequestAcceptedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[5]
+	mi := &file_shared_v1_updates_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -662,7 +802,7 @@ func (x *FriendRequestAcceptedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FriendRequestAcceptedEvent.ProtoReflect.Descriptor instead.
 func (*FriendRequestAcceptedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{5}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *FriendRequestAcceptedEvent) GetRequest() *PendingRequestItem {
@@ -686,7 +826,7 @@ type FriendRequestRejectedEvent struct {
 
 func (x *FriendRequestRejectedEvent) Reset() {
 	*x = FriendRequestRejectedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[6]
+	mi := &file_shared_v1_updates_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -698,7 +838,7 @@ func (x *FriendRequestRejectedEvent) String() string {
 func (*FriendRequestRejectedEvent) ProtoMessage() {}
 
 func (x *FriendRequestRejectedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[6]
+	mi := &file_shared_v1_updates_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -711,7 +851,7 @@ func (x *FriendRequestRejectedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FriendRequestRejectedEvent.ProtoReflect.Descriptor instead.
 func (*FriendRequestRejectedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{6}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *FriendRequestRejectedEvent) GetRequestId() int64 {
@@ -742,7 +882,7 @@ type FriendRequestSentEvent struct {
 
 func (x *FriendRequestSentEvent) Reset() {
 	*x = FriendRequestSentEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[7]
+	mi := &file_shared_v1_updates_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -754,7 +894,7 @@ func (x *FriendRequestSentEvent) String() string {
 func (*FriendRequestSentEvent) ProtoMessage() {}
 
 func (x *FriendRequestSentEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[7]
+	mi := &file_shared_v1_updates_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -767,7 +907,7 @@ func (x *FriendRequestSentEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FriendRequestSentEvent.ProtoReflect.Descriptor instead.
 func (*FriendRequestSentEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{7}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *FriendRequestSentEvent) GetRequestId() int64 {
@@ -799,7 +939,7 @@ type ContactAliasUpdatedEvent struct {
 
 func (x *ContactAliasUpdatedEvent) Reset() {
 	*x = ContactAliasUpdatedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[8]
+	mi := &file_shared_v1_updates_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -811,7 +951,7 @@ func (x *ContactAliasUpdatedEvent) String() string {
 func (*ContactAliasUpdatedEvent) ProtoMessage() {}
 
 func (x *ContactAliasUpdatedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[8]
+	mi := &file_shared_v1_updates_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -824,7 +964,7 @@ func (x *ContactAliasUpdatedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContactAliasUpdatedEvent.ProtoReflect.Descriptor instead.
 func (*ContactAliasUpdatedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{8}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ContactAliasUpdatedEvent) GetContactUserId() int32 {
@@ -856,7 +996,7 @@ type UsernameChangedEvent struct {
 
 func (x *UsernameChangedEvent) Reset() {
 	*x = UsernameChangedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[9]
+	mi := &file_shared_v1_updates_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -868,7 +1008,7 @@ func (x *UsernameChangedEvent) String() string {
 func (*UsernameChangedEvent) ProtoMessage() {}
 
 func (x *UsernameChangedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[9]
+	mi := &file_shared_v1_updates_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -881,7 +1021,7 @@ func (x *UsernameChangedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UsernameChangedEvent.ProtoReflect.Descriptor instead.
 func (*UsernameChangedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{9}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UsernameChangedEvent) GetUserId() int32 {
@@ -911,7 +1051,7 @@ type ContactDeletedEvent struct {
 
 func (x *ContactDeletedEvent) Reset() {
 	*x = ContactDeletedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[10]
+	mi := &file_shared_v1_updates_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -923,7 +1063,7 @@ func (x *ContactDeletedEvent) String() string {
 func (*ContactDeletedEvent) ProtoMessage() {}
 
 func (x *ContactDeletedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[10]
+	mi := &file_shared_v1_updates_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -936,7 +1076,7 @@ func (x *ContactDeletedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContactDeletedEvent.ProtoReflect.Descriptor instead.
 func (*ContactDeletedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{10}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ContactDeletedEvent) GetPeerUserId() int32 {
@@ -958,7 +1098,7 @@ type ContactAddedEvent struct {
 
 func (x *ContactAddedEvent) Reset() {
 	*x = ContactAddedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[11]
+	mi := &file_shared_v1_updates_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -970,7 +1110,7 @@ func (x *ContactAddedEvent) String() string {
 func (*ContactAddedEvent) ProtoMessage() {}
 
 func (x *ContactAddedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[11]
+	mi := &file_shared_v1_updates_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -983,7 +1123,7 @@ func (x *ContactAddedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContactAddedEvent.ProtoReflect.Descriptor instead.
 func (*ContactAddedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{11}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ContactAddedEvent) GetPeerUserId() int32 {
@@ -1008,7 +1148,7 @@ type UserBlockToggledEvent struct {
 
 func (x *UserBlockToggledEvent) Reset() {
 	*x = UserBlockToggledEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[12]
+	mi := &file_shared_v1_updates_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1020,7 +1160,7 @@ func (x *UserBlockToggledEvent) String() string {
 func (*UserBlockToggledEvent) ProtoMessage() {}
 
 func (x *UserBlockToggledEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[12]
+	mi := &file_shared_v1_updates_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1033,7 +1173,7 @@ func (x *UserBlockToggledEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserBlockToggledEvent.ProtoReflect.Descriptor instead.
 func (*UserBlockToggledEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{12}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UserBlockToggledEvent) GetTargetUserId() int32 {
@@ -1069,7 +1209,7 @@ type UserProfileUpdatedEvent struct {
 
 func (x *UserProfileUpdatedEvent) Reset() {
 	*x = UserProfileUpdatedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[13]
+	mi := &file_shared_v1_updates_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1081,7 +1221,7 @@ func (x *UserProfileUpdatedEvent) String() string {
 func (*UserProfileUpdatedEvent) ProtoMessage() {}
 
 func (x *UserProfileUpdatedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[13]
+	mi := &file_shared_v1_updates_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1094,7 +1234,7 @@ func (x *UserProfileUpdatedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserProfileUpdatedEvent.ProtoReflect.Descriptor instead.
 func (*UserProfileUpdatedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{13}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UserProfileUpdatedEvent) GetUserId() int32 {
@@ -1143,7 +1283,7 @@ type ConversationActionEvent struct {
 
 func (x *ConversationActionEvent) Reset() {
 	*x = ConversationActionEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[14]
+	mi := &file_shared_v1_updates_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1155,7 +1295,7 @@ func (x *ConversationActionEvent) String() string {
 func (*ConversationActionEvent) ProtoMessage() {}
 
 func (x *ConversationActionEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[14]
+	mi := &file_shared_v1_updates_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1168,7 +1308,7 @@ func (x *ConversationActionEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConversationActionEvent.ProtoReflect.Descriptor instead.
 func (*ConversationActionEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{14}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ConversationActionEvent) GetConversationId() int64 {
@@ -1211,7 +1351,7 @@ type MessageDeletedEvent struct {
 
 func (x *MessageDeletedEvent) Reset() {
 	*x = MessageDeletedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[15]
+	mi := &file_shared_v1_updates_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1223,7 +1363,7 @@ func (x *MessageDeletedEvent) String() string {
 func (*MessageDeletedEvent) ProtoMessage() {}
 
 func (x *MessageDeletedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[15]
+	mi := &file_shared_v1_updates_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1236,7 +1376,7 @@ func (x *MessageDeletedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageDeletedEvent.ProtoReflect.Descriptor instead.
 func (*MessageDeletedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{15}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *MessageDeletedEvent) GetConversationId() int64 {
@@ -1279,7 +1419,7 @@ type ReadReceiptEvent struct {
 
 func (x *ReadReceiptEvent) Reset() {
 	*x = ReadReceiptEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[16]
+	mi := &file_shared_v1_updates_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1291,7 +1431,7 @@ func (x *ReadReceiptEvent) String() string {
 func (*ReadReceiptEvent) ProtoMessage() {}
 
 func (x *ReadReceiptEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[16]
+	mi := &file_shared_v1_updates_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1304,7 +1444,7 @@ func (x *ReadReceiptEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReadReceiptEvent.ProtoReflect.Descriptor instead.
 func (*ReadReceiptEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{16}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ReadReceiptEvent) GetConversationId() int64 {
@@ -1350,7 +1490,7 @@ type RemovedFromGroupEvent struct {
 
 func (x *RemovedFromGroupEvent) Reset() {
 	*x = RemovedFromGroupEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[17]
+	mi := &file_shared_v1_updates_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1362,7 +1502,7 @@ func (x *RemovedFromGroupEvent) String() string {
 func (*RemovedFromGroupEvent) ProtoMessage() {}
 
 func (x *RemovedFromGroupEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[17]
+	mi := &file_shared_v1_updates_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1375,7 +1515,7 @@ func (x *RemovedFromGroupEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemovedFromGroupEvent.ProtoReflect.Descriptor instead.
 func (*RemovedFromGroupEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{17}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *RemovedFromGroupEvent) GetGroupId() int32 {
@@ -1406,7 +1546,7 @@ type GroupDissolvedEvent struct {
 
 func (x *GroupDissolvedEvent) Reset() {
 	*x = GroupDissolvedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[18]
+	mi := &file_shared_v1_updates_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1418,7 +1558,7 @@ func (x *GroupDissolvedEvent) String() string {
 func (*GroupDissolvedEvent) ProtoMessage() {}
 
 func (x *GroupDissolvedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[18]
+	mi := &file_shared_v1_updates_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1431,7 +1571,7 @@ func (x *GroupDissolvedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupDissolvedEvent.ProtoReflect.Descriptor instead.
 func (*GroupDissolvedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{18}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GroupDissolvedEvent) GetOperatorId() int32 {
@@ -1463,7 +1603,7 @@ type AgentStatusChangedEvent struct {
 
 func (x *AgentStatusChangedEvent) Reset() {
 	*x = AgentStatusChangedEvent{}
-	mi := &file_shared_v1_updates_proto_msgTypes[19]
+	mi := &file_shared_v1_updates_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1475,7 +1615,7 @@ func (x *AgentStatusChangedEvent) String() string {
 func (*AgentStatusChangedEvent) ProtoMessage() {}
 
 func (x *AgentStatusChangedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_updates_proto_msgTypes[19]
+	mi := &file_shared_v1_updates_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1488,7 +1628,7 @@ func (x *AgentStatusChangedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentStatusChangedEvent.ProtoReflect.Descriptor instead.
 func (*AgentStatusChangedEvent) Descriptor() ([]byte, []int) {
-	return file_shared_v1_updates_proto_rawDescGZIP(), []int{19}
+	return file_shared_v1_updates_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *AgentStatusChangedEvent) GetAgentUserId() int32 {
@@ -1530,16 +1670,31 @@ const file_shared_v1_updates_proto_rawDesc = "" +
 	"\x0fgroup_dissolved\x18\x10 \x01(\v2\x1e.shared.v1.GroupDissolvedEventH\x00R\x0egroupDissolved\x12I\n" +
 	"\x0fmessage_deleted\x18\x12 \x01(\v2\x1e.shared.v1.MessageDeletedEventH\x00R\x0emessageDeleted\x12C\n" +
 	"\rcontact_added\x18\x13 \x01(\v2\x1c.shared.v1.ContactAddedEventH\x00R\fcontactAddedB\b\n" +
-	"\x06update\"\xad\x01\n" +
+	"\x06update\"\xee\x01\n" +
 	"\vNonSnUpdate\x12G\n" +
 	"\x10message_envelope\x18\x01 \x01(\v2\x1a.shared.v1.MessageEnvelopeH\x00R\x0fmessageEnvelope\x12K\n" +
-	"\x12card_action_answer\x18\x02 \x01(\v2\x1b.shared.v1.CardActionAnswerH\x00R\x10cardActionAnswerB\b\n" +
-	"\x06update\"b\n" +
+	"\x12card_action_answer\x18\x02 \x01(\v2\x1b.shared.v1.CardActionAnswerH\x00R\x10cardActionAnswer\x12?\n" +
+	"\vcard_action\x18\x03 \x01(\v2\x1c.shared.v1.CardActionPayloadH\x00R\n" +
+	"cardActionB\b\n" +
+	"\x06update\"\xce\x01\n" +
 	"\x10CardActionAnswer\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\x12\x12\n" +
-	"\x04text\x18\x02 \x01(\tR\x04text\x12\x1d\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12'\n" +
+	"\x0fconversation_id\x18\x02 \x01(\x03R\x0econversationId\x12\x1d\n" +
 	"\n" +
-	"show_alert\x18\x03 \x01(\bR\tshowAlert\"*\n" +
+	"message_id\x18\x03 \x01(\x03R\tmessageId\x12\"\n" +
+	"\ragent_user_id\x18\x04 \x01(\x05R\vagentUserId\x12\x12\n" +
+	"\x04text\x18\x05 \x01(\tR\x04text\x12\x1d\n" +
+	"\n" +
+	"show_alert\x18\x06 \x01(\bR\tshowAlert\"\xca\x01\n" +
+	"\x11CardActionPayload\x12\x1b\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x12'\n" +
+	"\x0fconversation_id\x18\x02 \x01(\x03R\x0econversationId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x03 \x01(\x03R\tmessageId\x12\x1b\n" +
+	"\tsender_id\x18\x04 \x01(\x05R\bsenderId\x12\x1f\n" +
+	"\vaction_data\x18\x05 \x01(\tR\n" +
+	"actionData\x12\x12\n" +
+	"\x04verb\x18\x06 \x01(\tR\x04verb\"*\n" +
 	"\vUpdateState\x12\x1b\n" +
 	"\tlatest_sn\x18\x01 \x01(\x05R\blatestSn\"U\n" +
 	"\x1aFriendRequestReceivedEvent\x127\n" +
@@ -1620,62 +1775,64 @@ func file_shared_v1_updates_proto_rawDescGZIP() []byte {
 	return file_shared_v1_updates_proto_rawDescData
 }
 
-var file_shared_v1_updates_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_shared_v1_updates_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_shared_v1_updates_proto_goTypes = []any{
 	(*SnUpdate)(nil),                   // 0: shared.v1.SnUpdate
 	(*NonSnUpdate)(nil),                // 1: shared.v1.NonSnUpdate
 	(*CardActionAnswer)(nil),           // 2: shared.v1.CardActionAnswer
-	(*UpdateState)(nil),                // 3: shared.v1.UpdateState
-	(*FriendRequestReceivedEvent)(nil), // 4: shared.v1.FriendRequestReceivedEvent
-	(*FriendRequestAcceptedEvent)(nil), // 5: shared.v1.FriendRequestAcceptedEvent
-	(*FriendRequestRejectedEvent)(nil), // 6: shared.v1.FriendRequestRejectedEvent
-	(*FriendRequestSentEvent)(nil),     // 7: shared.v1.FriendRequestSentEvent
-	(*ContactAliasUpdatedEvent)(nil),   // 8: shared.v1.ContactAliasUpdatedEvent
-	(*UsernameChangedEvent)(nil),       // 9: shared.v1.UsernameChangedEvent
-	(*ContactDeletedEvent)(nil),        // 10: shared.v1.ContactDeletedEvent
-	(*ContactAddedEvent)(nil),          // 11: shared.v1.ContactAddedEvent
-	(*UserBlockToggledEvent)(nil),      // 12: shared.v1.UserBlockToggledEvent
-	(*UserProfileUpdatedEvent)(nil),    // 13: shared.v1.UserProfileUpdatedEvent
-	(*ConversationActionEvent)(nil),    // 14: shared.v1.ConversationActionEvent
-	(*MessageDeletedEvent)(nil),        // 15: shared.v1.MessageDeletedEvent
-	(*ReadReceiptEvent)(nil),           // 16: shared.v1.ReadReceiptEvent
-	(*RemovedFromGroupEvent)(nil),      // 17: shared.v1.RemovedFromGroupEvent
-	(*GroupDissolvedEvent)(nil),        // 18: shared.v1.GroupDissolvedEvent
-	(*AgentStatusChangedEvent)(nil),    // 19: shared.v1.AgentStatusChangedEvent
-	(*MessageEnvelope)(nil),            // 20: shared.v1.MessageEnvelope
-	(*PendingRequestItem)(nil),         // 21: shared.v1.PendingRequestItem
-	(ConversationActionType)(0),        // 22: shared.v1.ConversationActionType
-	(AgentStatus)(0),                   // 23: shared.v1.AgentStatus
+	(*CardActionPayload)(nil),          // 3: shared.v1.CardActionPayload
+	(*UpdateState)(nil),                // 4: shared.v1.UpdateState
+	(*FriendRequestReceivedEvent)(nil), // 5: shared.v1.FriendRequestReceivedEvent
+	(*FriendRequestAcceptedEvent)(nil), // 6: shared.v1.FriendRequestAcceptedEvent
+	(*FriendRequestRejectedEvent)(nil), // 7: shared.v1.FriendRequestRejectedEvent
+	(*FriendRequestSentEvent)(nil),     // 8: shared.v1.FriendRequestSentEvent
+	(*ContactAliasUpdatedEvent)(nil),   // 9: shared.v1.ContactAliasUpdatedEvent
+	(*UsernameChangedEvent)(nil),       // 10: shared.v1.UsernameChangedEvent
+	(*ContactDeletedEvent)(nil),        // 11: shared.v1.ContactDeletedEvent
+	(*ContactAddedEvent)(nil),          // 12: shared.v1.ContactAddedEvent
+	(*UserBlockToggledEvent)(nil),      // 13: shared.v1.UserBlockToggledEvent
+	(*UserProfileUpdatedEvent)(nil),    // 14: shared.v1.UserProfileUpdatedEvent
+	(*ConversationActionEvent)(nil),    // 15: shared.v1.ConversationActionEvent
+	(*MessageDeletedEvent)(nil),        // 16: shared.v1.MessageDeletedEvent
+	(*ReadReceiptEvent)(nil),           // 17: shared.v1.ReadReceiptEvent
+	(*RemovedFromGroupEvent)(nil),      // 18: shared.v1.RemovedFromGroupEvent
+	(*GroupDissolvedEvent)(nil),        // 19: shared.v1.GroupDissolvedEvent
+	(*AgentStatusChangedEvent)(nil),    // 20: shared.v1.AgentStatusChangedEvent
+	(*MessageEnvelope)(nil),            // 21: shared.v1.MessageEnvelope
+	(*PendingRequestItem)(nil),         // 22: shared.v1.PendingRequestItem
+	(ConversationActionType)(0),        // 23: shared.v1.ConversationActionType
+	(AgentStatus)(0),                   // 24: shared.v1.AgentStatus
 }
 var file_shared_v1_updates_proto_depIdxs = []int32{
-	20, // 0: shared.v1.SnUpdate.message_envelope:type_name -> shared.v1.MessageEnvelope
-	4,  // 1: shared.v1.SnUpdate.friend_request_received:type_name -> shared.v1.FriendRequestReceivedEvent
-	5,  // 2: shared.v1.SnUpdate.friend_request_accepted:type_name -> shared.v1.FriendRequestAcceptedEvent
-	6,  // 3: shared.v1.SnUpdate.friend_request_rejected:type_name -> shared.v1.FriendRequestRejectedEvent
-	10, // 4: shared.v1.SnUpdate.contact_deleted:type_name -> shared.v1.ContactDeletedEvent
-	12, // 5: shared.v1.SnUpdate.user_block_toggled:type_name -> shared.v1.UserBlockToggledEvent
-	13, // 6: shared.v1.SnUpdate.user_profile_updated:type_name -> shared.v1.UserProfileUpdatedEvent
-	14, // 7: shared.v1.SnUpdate.conversation_action:type_name -> shared.v1.ConversationActionEvent
-	16, // 8: shared.v1.SnUpdate.read_receipt:type_name -> shared.v1.ReadReceiptEvent
-	19, // 9: shared.v1.SnUpdate.agent_status_changed:type_name -> shared.v1.AgentStatusChangedEvent
-	7,  // 10: shared.v1.SnUpdate.friend_request_sent:type_name -> shared.v1.FriendRequestSentEvent
-	8,  // 11: shared.v1.SnUpdate.contact_alias_updated:type_name -> shared.v1.ContactAliasUpdatedEvent
-	9,  // 12: shared.v1.SnUpdate.username_changed:type_name -> shared.v1.UsernameChangedEvent
-	17, // 13: shared.v1.SnUpdate.removed_from_group:type_name -> shared.v1.RemovedFromGroupEvent
-	18, // 14: shared.v1.SnUpdate.group_dissolved:type_name -> shared.v1.GroupDissolvedEvent
-	15, // 15: shared.v1.SnUpdate.message_deleted:type_name -> shared.v1.MessageDeletedEvent
-	11, // 16: shared.v1.SnUpdate.contact_added:type_name -> shared.v1.ContactAddedEvent
-	20, // 17: shared.v1.NonSnUpdate.message_envelope:type_name -> shared.v1.MessageEnvelope
+	21, // 0: shared.v1.SnUpdate.message_envelope:type_name -> shared.v1.MessageEnvelope
+	5,  // 1: shared.v1.SnUpdate.friend_request_received:type_name -> shared.v1.FriendRequestReceivedEvent
+	6,  // 2: shared.v1.SnUpdate.friend_request_accepted:type_name -> shared.v1.FriendRequestAcceptedEvent
+	7,  // 3: shared.v1.SnUpdate.friend_request_rejected:type_name -> shared.v1.FriendRequestRejectedEvent
+	11, // 4: shared.v1.SnUpdate.contact_deleted:type_name -> shared.v1.ContactDeletedEvent
+	13, // 5: shared.v1.SnUpdate.user_block_toggled:type_name -> shared.v1.UserBlockToggledEvent
+	14, // 6: shared.v1.SnUpdate.user_profile_updated:type_name -> shared.v1.UserProfileUpdatedEvent
+	15, // 7: shared.v1.SnUpdate.conversation_action:type_name -> shared.v1.ConversationActionEvent
+	17, // 8: shared.v1.SnUpdate.read_receipt:type_name -> shared.v1.ReadReceiptEvent
+	20, // 9: shared.v1.SnUpdate.agent_status_changed:type_name -> shared.v1.AgentStatusChangedEvent
+	8,  // 10: shared.v1.SnUpdate.friend_request_sent:type_name -> shared.v1.FriendRequestSentEvent
+	9,  // 11: shared.v1.SnUpdate.contact_alias_updated:type_name -> shared.v1.ContactAliasUpdatedEvent
+	10, // 12: shared.v1.SnUpdate.username_changed:type_name -> shared.v1.UsernameChangedEvent
+	18, // 13: shared.v1.SnUpdate.removed_from_group:type_name -> shared.v1.RemovedFromGroupEvent
+	19, // 14: shared.v1.SnUpdate.group_dissolved:type_name -> shared.v1.GroupDissolvedEvent
+	16, // 15: shared.v1.SnUpdate.message_deleted:type_name -> shared.v1.MessageDeletedEvent
+	12, // 16: shared.v1.SnUpdate.contact_added:type_name -> shared.v1.ContactAddedEvent
+	21, // 17: shared.v1.NonSnUpdate.message_envelope:type_name -> shared.v1.MessageEnvelope
 	2,  // 18: shared.v1.NonSnUpdate.card_action_answer:type_name -> shared.v1.CardActionAnswer
-	21, // 19: shared.v1.FriendRequestReceivedEvent.request:type_name -> shared.v1.PendingRequestItem
-	21, // 20: shared.v1.FriendRequestAcceptedEvent.request:type_name -> shared.v1.PendingRequestItem
-	22, // 21: shared.v1.ConversationActionEvent.action:type_name -> shared.v1.ConversationActionType
-	23, // 22: shared.v1.AgentStatusChangedEvent.new_status:type_name -> shared.v1.AgentStatus
-	23, // [23:23] is the sub-list for method output_type
-	23, // [23:23] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	3,  // 19: shared.v1.NonSnUpdate.card_action:type_name -> shared.v1.CardActionPayload
+	22, // 20: shared.v1.FriendRequestReceivedEvent.request:type_name -> shared.v1.PendingRequestItem
+	22, // 21: shared.v1.FriendRequestAcceptedEvent.request:type_name -> shared.v1.PendingRequestItem
+	23, // 22: shared.v1.ConversationActionEvent.action:type_name -> shared.v1.ConversationActionType
+	24, // 23: shared.v1.AgentStatusChangedEvent.new_status:type_name -> shared.v1.AgentStatus
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_shared_v1_updates_proto_init() }
@@ -1709,15 +1866,16 @@ func file_shared_v1_updates_proto_init() {
 	file_shared_v1_updates_proto_msgTypes[1].OneofWrappers = []any{
 		(*NonSnUpdate_MessageEnvelope)(nil),
 		(*NonSnUpdate_CardActionAnswer)(nil),
+		(*NonSnUpdate_CardAction)(nil),
 	}
-	file_shared_v1_updates_proto_msgTypes[13].OneofWrappers = []any{}
+	file_shared_v1_updates_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shared_v1_updates_proto_rawDesc), len(file_shared_v1_updates_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
