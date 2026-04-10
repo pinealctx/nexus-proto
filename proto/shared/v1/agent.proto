@@ -47,44 +47,63 @@ message AgentCommandList {
   repeated AgentCommandInfo items = 1;
 }
 
-// AgentDetail is the full detail view of an agent for profile pages.
-message AgentDetail {
+// AgentInfo is the public profile view of an agent, visible to all users.
+message AgentInfo {
   // Agent user info (user_id, username, nickname, avatar_url, account_type).
   // The signature field in UserInfo serves as the agent description.
   UserInfo user = 1;
-  // Registered slash commands.
-  repeated AgentCommandInfo commands = 2;
   // Agent creator info.
-  UserInfo creator = 3;
+  UserInfo creator = 2;
   // Agent status (active/deleted).
-  AgentStatus status = 4;
+  AgentStatus status = 3;
+  // Agent visibility (public/private).
+  AgentVisibility visibility = 4;
+  // Whether this is a system agent (e.g. AgentRoot).
+  bool is_system_agent = 5;
+  // Registered slash commands.
+  repeated AgentCommandInfo commands = 6;
+  // Whether Mini App is enabled for this agent.
+  bool mini_app_enabled = 7;
+  // Mini App entry URL (HTTPS).
+  string mini_app_url = 8;
+  // Mini App permission bitmask.
+  int32 mini_app_permissions = 9;
   // Agent creation time (Unix ms).
-  int64 created_at = 5;
+  int64 created_at = 10;
 }
 
-// AgentProfile is the self-view of an agent's profile, returned to the
-// agent developer via AgentService.GetSelfAgent.
+// AgentProfile is the developer-facing full detail of an agent's profile.
 message AgentProfile {
+  // Agent user info (user_id, username, nickname, avatar_url, account_type, signature).
+  UserInfo user = 1;
   // Agent status.
-  AgentStatus status = 1;
+  AgentStatus status = 2;
   // Agent visibility.
-  AgentVisibility visibility = 2;
-  // Allowed IP addresses for API access.
-  repeated string ip_whitelist = 3;
-  // Registered slash commands.
-  repeated AgentCommandInfo commands = 4;
-  // Agent token prefix (e.g. "nxa_xxxx") for identification.
-  string token_prefix = 5;
-  // Whether a webhook URL is configured.
-  bool webhook_configured = 6;
+  AgentVisibility visibility = 3;
   // Whether this is a system agent.
-  bool is_system_agent = 7;
-  // Agent creation time (Unix ms).
-  int64 created_at = 8;
-  // Agent last update time (Unix ms).
-  int64 updated_at = 9;
+  bool is_system_agent = 4;
   // Agent event delivery mode.
-  AgentDeliveryMode delivery_mode = 10;
+  AgentDeliveryMode delivery_mode = 5;
+  // Agent token prefix (e.g. "nxa_xxxx") for identification.
+  string token_prefix = 6;
+  // Secret key prefix for identification (e.g. "abcd1234...").
+  string secret_key_prefix = 7;
+  // Allowed IP addresses for API access.
+  repeated string ip_whitelist = 8;
+  // Registered slash commands.
+  repeated AgentCommandInfo commands = 9;
+  // Whether Mini App is enabled.
+  bool mini_app_enabled = 10;
+  // Mini App entry URL.
+  string mini_app_url = 11;
+  // Allowed web origins for Mini App security validation.
+  repeated string mini_app_allowed_origins = 12;
+  // Mini App permission bitmask.
+  int32 mini_app_permissions = 13;
+  // Agent creation time (Unix ms).
+  int64 created_at = 14;
+  // Agent last update time (Unix ms).
+  int64 updated_at = 15;
 }
 
 // AgentDeliveryMode defines the event delivery mode for an agent.
@@ -96,20 +115,3 @@ enum AgentDeliveryMode {
   // Events delivered via WebSocket push.
   AGENT_DELIVERY_MODE_WEBSOCKET = 2;
 }
-
-// ── Delivery configuration ──
-
-// WebhookDeliveryConfig configures webhook delivery.
-message WebhookDeliveryConfig {
-  // Webhook URL (must be HTTPS).
-  string url = 1 [(buf.validate.field).string = {
-    min_len: 1
-    max_len: 2048
-  }];
-}
-
-// WebSocketDeliveryConfig enables WebSocket delivery.
-message WebSocketDeliveryConfig {}
-
-// NoDeliveryConfig stops all event delivery.
-message NoDeliveryConfig {}

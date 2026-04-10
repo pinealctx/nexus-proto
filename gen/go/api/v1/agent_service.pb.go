@@ -73,7 +73,7 @@ func (x *ListFeaturedAgentsRequest) GetLimit() int32 {
 type ListFeaturedAgentsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Recommended agents.
-	Agents        []*v1.UserInfo `protobuf:"bytes,1,rep,name=agents,proto3" json:"agents,omitempty"`
+	Agents        []*v1.AgentInfo `protobuf:"bytes,1,rep,name=agents,proto3" json:"agents,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -108,15 +108,15 @@ func (*ListFeaturedAgentsResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListFeaturedAgentsResponse) GetAgents() []*v1.UserInfo {
+func (x *ListFeaturedAgentsResponse) GetAgents() []*v1.AgentInfo {
 	if x != nil {
 		return x.Agents
 	}
 	return nil
 }
 
-// GetAgentDetailRequest requests detailed info for a specific agent.
-type GetAgentDetailRequest struct {
+// GetAgentInfoRequest requests public profile info for a specific agent.
+type GetAgentInfoRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Agent user ID.
 	AgentUserId   int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
@@ -124,20 +124,20 @@ type GetAgentDetailRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetAgentDetailRequest) Reset() {
-	*x = GetAgentDetailRequest{}
+func (x *GetAgentInfoRequest) Reset() {
+	*x = GetAgentInfoRequest{}
 	mi := &file_api_v1_agent_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetAgentDetailRequest) String() string {
+func (x *GetAgentInfoRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetAgentDetailRequest) ProtoMessage() {}
+func (*GetAgentInfoRequest) ProtoMessage() {}
 
-func (x *GetAgentDetailRequest) ProtoReflect() protoreflect.Message {
+func (x *GetAgentInfoRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_agent_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -149,41 +149,41 @@ func (x *GetAgentDetailRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetAgentDetailRequest.ProtoReflect.Descriptor instead.
-func (*GetAgentDetailRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetAgentInfoRequest.ProtoReflect.Descriptor instead.
+func (*GetAgentInfoRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetAgentDetailRequest) GetAgentUserId() int32 {
+func (x *GetAgentInfoRequest) GetAgentUserId() int32 {
 	if x != nil {
 		return x.AgentUserId
 	}
 	return 0
 }
 
-// GetAgentDetailResponse contains the agent detail.
-type GetAgentDetailResponse struct {
+// GetAgentInfoResponse contains the agent public profile.
+type GetAgentInfoResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Agent detail info.
-	Agent         *v1.AgentDetail `protobuf:"bytes,1,opt,name=agent,proto3" json:"agent,omitempty"`
+	// Agent public profile info.
+	Agent         *v1.AgentInfo `protobuf:"bytes,1,opt,name=agent,proto3" json:"agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetAgentDetailResponse) Reset() {
-	*x = GetAgentDetailResponse{}
+func (x *GetAgentInfoResponse) Reset() {
+	*x = GetAgentInfoResponse{}
 	mi := &file_api_v1_agent_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetAgentDetailResponse) String() string {
+func (x *GetAgentInfoResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetAgentDetailResponse) ProtoMessage() {}
+func (*GetAgentInfoResponse) ProtoMessage() {}
 
-func (x *GetAgentDetailResponse) ProtoReflect() protoreflect.Message {
+func (x *GetAgentInfoResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_agent_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -195,39 +195,47 @@ func (x *GetAgentDetailResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetAgentDetailResponse.ProtoReflect.Descriptor instead.
-func (*GetAgentDetailResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetAgentInfoResponse.ProtoReflect.Descriptor instead.
+func (*GetAgentInfoResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetAgentDetailResponse) GetAgent() *v1.AgentDetail {
+func (x *GetAgentInfoResponse) GetAgent() *v1.AgentInfo {
 	if x != nil {
 		return x.Agent
 	}
 	return nil
 }
 
-// GetSelfAgentRequest requests the current agent profile.
-type GetSelfAgentRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+// GetMiniAppLaunchDataRequest requests signed initData for launching a Mini App.
+type GetMiniAppLaunchDataRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target agent user ID.
+	AgentUserId int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
+	// Conversation ID (private chat or group chat). Zero means no conversation context.
+	ConversationId int64 `protobuf:"varint,2,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
+	// Start parameter (from Direct Link or Card Action).
+	StartParam string `protobuf:"bytes,3,opt,name=start_param,json=startParam,proto3" json:"start_param,omitempty"`
+	// Client platform ("ios" / "android" / "desktop").
+	Platform      string `protobuf:"bytes,4,opt,name=platform,proto3" json:"platform,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetSelfAgentRequest) Reset() {
-	*x = GetSelfAgentRequest{}
+func (x *GetMiniAppLaunchDataRequest) Reset() {
+	*x = GetMiniAppLaunchDataRequest{}
 	mi := &file_api_v1_agent_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetSelfAgentRequest) String() string {
+func (x *GetMiniAppLaunchDataRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetSelfAgentRequest) ProtoMessage() {}
+func (*GetMiniAppLaunchDataRequest) ProtoMessage() {}
 
-func (x *GetSelfAgentRequest) ProtoReflect() protoreflect.Message {
+func (x *GetMiniAppLaunchDataRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_agent_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -239,36 +247,64 @@ func (x *GetSelfAgentRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetSelfAgentRequest.ProtoReflect.Descriptor instead.
-func (*GetSelfAgentRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetMiniAppLaunchDataRequest.ProtoReflect.Descriptor instead.
+func (*GetMiniAppLaunchDataRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{4}
 }
 
-// GetSelfAgentResponse contains the full agent profile (developer self-view).
-type GetSelfAgentResponse struct {
+func (x *GetMiniAppLaunchDataRequest) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
+func (x *GetMiniAppLaunchDataRequest) GetConversationId() int64 {
+	if x != nil {
+		return x.ConversationId
+	}
+	return 0
+}
+
+func (x *GetMiniAppLaunchDataRequest) GetStartParam() string {
+	if x != nil {
+		return x.StartParam
+	}
+	return ""
+}
+
+func (x *GetMiniAppLaunchDataRequest) GetPlatform() string {
+	if x != nil {
+		return x.Platform
+	}
+	return ""
+}
+
+// GetMiniAppLaunchDataResponse contains the signed initData and Mini App URL.
+type GetMiniAppLaunchDataResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Agent user info (public fields).
-	User *v1.UserInfo `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	// Agent profile (developer-visible fields).
-	Profile       *v1.AgentProfile `protobuf:"bytes,2,opt,name=profile,proto3" json:"profile,omitempty"`
+	// Signed initData query string.
+	InitData string `protobuf:"bytes,1,opt,name=init_data,json=initData,proto3" json:"init_data,omitempty"`
+	// Mini App entry URL.
+	MiniAppUrl    string `protobuf:"bytes,2,opt,name=mini_app_url,json=miniAppUrl,proto3" json:"mini_app_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetSelfAgentResponse) Reset() {
-	*x = GetSelfAgentResponse{}
+func (x *GetMiniAppLaunchDataResponse) Reset() {
+	*x = GetMiniAppLaunchDataResponse{}
 	mi := &file_api_v1_agent_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetSelfAgentResponse) String() string {
+func (x *GetMiniAppLaunchDataResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetSelfAgentResponse) ProtoMessage() {}
+func (*GetMiniAppLaunchDataResponse) ProtoMessage() {}
 
-func (x *GetSelfAgentResponse) ProtoReflect() protoreflect.Message {
+func (x *GetMiniAppLaunchDataResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_agent_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -280,59 +316,175 @@ func (x *GetSelfAgentResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetSelfAgentResponse.ProtoReflect.Descriptor instead.
-func (*GetSelfAgentResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetMiniAppLaunchDataResponse.ProtoReflect.Descriptor instead.
+func (*GetMiniAppLaunchDataResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetSelfAgentResponse) GetUser() *v1.UserInfo {
+func (x *GetMiniAppLaunchDataResponse) GetInitData() string {
 	if x != nil {
-		return x.User
+		return x.InitData
 	}
-	return nil
+	return ""
 }
 
-func (x *GetSelfAgentResponse) GetProfile() *v1.AgentProfile {
+func (x *GetMiniAppLaunchDataResponse) GetMiniAppUrl() string {
+	if x != nil {
+		return x.MiniAppUrl
+	}
+	return ""
+}
+
+// CreateAgentRequest creates a new agent.
+type CreateAgentRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Agent unique username.
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	// Agent display name.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Agent signature / description.
+	Signature     string `protobuf:"bytes,3,opt,name=signature,proto3" json:"signature,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAgentRequest) Reset() {
+	*x = CreateAgentRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAgentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAgentRequest) ProtoMessage() {}
+
+func (x *CreateAgentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAgentRequest.ProtoReflect.Descriptor instead.
+func (*CreateAgentRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CreateAgentRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *CreateAgentRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateAgentRequest) GetSignature() string {
+	if x != nil {
+		return x.Signature
+	}
+	return ""
+}
+
+// CreateAgentResponse contains the created agent credentials and profile.
+type CreateAgentResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Full agent profile.
+	Profile *v1.AgentProfile `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
+	// Generated API token (plaintext, returned only once).
+	Token string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	// Generated HMAC secret key (plaintext, returned only once).
+	SecretKey     string `protobuf:"bytes,3,opt,name=secret_key,json=secretKey,proto3" json:"secret_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAgentResponse) Reset() {
+	*x = CreateAgentResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAgentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAgentResponse) ProtoMessage() {}
+
+func (x *CreateAgentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAgentResponse.ProtoReflect.Descriptor instead.
+func (*CreateAgentResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CreateAgentResponse) GetProfile() *v1.AgentProfile {
 	if x != nil {
 		return x.Profile
 	}
 	return nil
 }
 
-// UpdateSelfAgentRequest updates agent profile fields.
-// All fields are optional; only provided fields are updated.
-type UpdateSelfAgentRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// New display name.
-	Name *string `protobuf:"bytes,1,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	// New avatar URL.
-	AvatarUrl *string `protobuf:"bytes,2,opt,name=avatar_url,json=avatarUrl,proto3,oneof" json:"avatar_url,omitempty"`
-	// New visibility setting.
-	Visibility *v1.AgentVisibility `protobuf:"varint,3,opt,name=visibility,proto3,enum=shared.v1.AgentVisibility,oneof" json:"visibility,omitempty"`
-	// New IP whitelist (replaces existing). Pass empty list to clear.
-	IpWhitelist []string `protobuf:"bytes,4,rep,name=ip_whitelist,json=ipWhitelist,proto3" json:"ip_whitelist,omitempty"`
-	// Slash commands (replaces existing, max 100). When set, replaces all
-	// commands; omit to leave commands unchanged.
-	Commands      *v1.AgentCommandList `protobuf:"bytes,5,opt,name=commands,proto3,oneof" json:"commands,omitempty"`
+func (x *CreateAgentResponse) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *CreateAgentResponse) GetSecretKey() string {
+	if x != nil {
+		return x.SecretKey
+	}
+	return ""
+}
+
+// ListMyAgentsRequest lists agents owned by the authenticated user.
+type ListMyAgentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateSelfAgentRequest) Reset() {
-	*x = UpdateSelfAgentRequest{}
-	mi := &file_api_v1_agent_service_proto_msgTypes[6]
+func (x *ListMyAgentsRequest) Reset() {
+	*x = ListMyAgentsRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateSelfAgentRequest) String() string {
+func (x *ListMyAgentsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateSelfAgentRequest) ProtoMessage() {}
+func (*ListMyAgentsRequest) ProtoMessage() {}
 
-func (x *UpdateSelfAgentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_agent_service_proto_msgTypes[6]
+func (x *ListMyAgentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,368 +495,263 @@ func (x *UpdateSelfAgentRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateSelfAgentRequest.ProtoReflect.Descriptor instead.
-func (*UpdateSelfAgentRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use ListMyAgentsRequest.ProtoReflect.Descriptor instead.
+func (*ListMyAgentsRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *UpdateSelfAgentRequest) GetName() string {
-	if x != nil && x.Name != nil {
-		return *x.Name
+// ListMyAgentsResponse contains the agent list.
+type ListMyAgentsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Agent profiles (developer-visible details).
+	Agents        []*v1.AgentProfile `protobuf:"bytes,1,rep,name=agents,proto3" json:"agents,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMyAgentsResponse) Reset() {
+	*x = ListMyAgentsResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMyAgentsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMyAgentsResponse) ProtoMessage() {}
+
+func (x *ListMyAgentsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
 	}
-	return ""
+	return mi.MessageOf(x)
 }
 
-func (x *UpdateSelfAgentRequest) GetAvatarUrl() string {
-	if x != nil && x.AvatarUrl != nil {
-		return *x.AvatarUrl
+// Deprecated: Use ListMyAgentsResponse.ProtoReflect.Descriptor instead.
+func (*ListMyAgentsResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ListMyAgentsResponse) GetAgents() []*v1.AgentProfile {
+	if x != nil {
+		return x.Agents
 	}
-	return ""
+	return nil
 }
 
-func (x *UpdateSelfAgentRequest) GetVisibility() v1.AgentVisibility {
+// GetMyAgentRequest requests the full profile of a specific agent.
+type GetMyAgentRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target agent user ID.
+	AgentUserId   int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMyAgentRequest) Reset() {
+	*x = GetMyAgentRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMyAgentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMyAgentRequest) ProtoMessage() {}
+
+func (x *GetMyAgentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMyAgentRequest.ProtoReflect.Descriptor instead.
+func (*GetMyAgentRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *GetMyAgentRequest) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
+// GetMyAgentResponse contains the full agent profile.
+type GetMyAgentResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Agent profile (developer-visible fields, includes user info).
+	Profile       *v1.AgentProfile `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetMyAgentResponse) Reset() {
+	*x = GetMyAgentResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetMyAgentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetMyAgentResponse) ProtoMessage() {}
+
+func (x *GetMyAgentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetMyAgentResponse.ProtoReflect.Descriptor instead.
+func (*GetMyAgentResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetMyAgentResponse) GetProfile() *v1.AgentProfile {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
+// SetAgentConfigRequest updates agent configuration fields.
+// Only provided fields are updated; omitted fields remain unchanged.
+type SetAgentConfigRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target agent user ID.
+	AgentUserId int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
+	// Visibility setting.
+	Visibility *v1.AgentVisibility `protobuf:"varint,2,opt,name=visibility,proto3,enum=shared.v1.AgentVisibility,oneof" json:"visibility,omitempty"`
+	// IP whitelist (replaces existing). Pass empty list to clear.
+	IpWhitelist []string `protobuf:"bytes,3,rep,name=ip_whitelist,json=ipWhitelist,proto3" json:"ip_whitelist,omitempty"`
+	// Slash commands (replaces existing, max 100). When set, replaces all
+	// commands; omit to leave commands unchanged.
+	Commands *v1.AgentCommandList `protobuf:"bytes,4,opt,name=commands,proto3,oneof" json:"commands,omitempty"`
+	// Event delivery mode.
+	DeliveryMode *v1.AgentDeliveryMode `protobuf:"varint,5,opt,name=delivery_mode,json=deliveryMode,proto3,enum=shared.v1.AgentDeliveryMode,oneof" json:"delivery_mode,omitempty"`
+	// Webhook URL (required when delivery_mode is WEBHOOK, must be HTTPS).
+	WebhookUrl    *string `protobuf:"bytes,6,opt,name=webhook_url,json=webhookUrl,proto3,oneof" json:"webhook_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetAgentConfigRequest) Reset() {
+	*x = SetAgentConfigRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetAgentConfigRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetAgentConfigRequest) ProtoMessage() {}
+
+func (x *SetAgentConfigRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetAgentConfigRequest.ProtoReflect.Descriptor instead.
+func (*SetAgentConfigRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SetAgentConfigRequest) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
+func (x *SetAgentConfigRequest) GetVisibility() v1.AgentVisibility {
 	if x != nil && x.Visibility != nil {
 		return *x.Visibility
 	}
 	return v1.AgentVisibility(0)
 }
 
-func (x *UpdateSelfAgentRequest) GetIpWhitelist() []string {
+func (x *SetAgentConfigRequest) GetIpWhitelist() []string {
 	if x != nil {
 		return x.IpWhitelist
 	}
 	return nil
 }
 
-func (x *UpdateSelfAgentRequest) GetCommands() *v1.AgentCommandList {
+func (x *SetAgentConfigRequest) GetCommands() *v1.AgentCommandList {
 	if x != nil {
 		return x.Commands
 	}
 	return nil
 }
 
-// UpdateSelfAgentResponse is returned after the agent is updated.
-type UpdateSelfAgentResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateSelfAgentResponse) Reset() {
-	*x = UpdateSelfAgentResponse{}
-	mi := &file_api_v1_agent_service_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateSelfAgentResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateSelfAgentResponse) ProtoMessage() {}
-
-func (x *UpdateSelfAgentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_agent_service_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+func (x *SetAgentConfigRequest) GetDeliveryMode() v1.AgentDeliveryMode {
+	if x != nil && x.DeliveryMode != nil {
+		return *x.DeliveryMode
 	}
-	return mi.MessageOf(x)
+	return v1.AgentDeliveryMode(0)
 }
 
-// Deprecated: Use UpdateSelfAgentResponse.ProtoReflect.Descriptor instead.
-func (*UpdateSelfAgentResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{7}
-}
-
-// DeleteSelfAgentRequest permanently deletes the current agent.
-type DeleteSelfAgentRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteSelfAgentRequest) Reset() {
-	*x = DeleteSelfAgentRequest{}
-	mi := &file_api_v1_agent_service_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteSelfAgentRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteSelfAgentRequest) ProtoMessage() {}
-
-func (x *DeleteSelfAgentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_agent_service_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteSelfAgentRequest.ProtoReflect.Descriptor instead.
-func (*DeleteSelfAgentRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{8}
-}
-
-// DeleteSelfAgentResponse is returned after the agent is deleted.
-type DeleteSelfAgentResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteSelfAgentResponse) Reset() {
-	*x = DeleteSelfAgentResponse{}
-	mi := &file_api_v1_agent_service_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteSelfAgentResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteSelfAgentResponse) ProtoMessage() {}
-
-func (x *DeleteSelfAgentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_agent_service_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteSelfAgentResponse.ProtoReflect.Descriptor instead.
-func (*DeleteSelfAgentResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{9}
-}
-
-// RevokeSelfTokenRequest revokes the current agent token.
-type RevokeSelfTokenRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RevokeSelfTokenRequest) Reset() {
-	*x = RevokeSelfTokenRequest{}
-	mi := &file_api_v1_agent_service_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RevokeSelfTokenRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RevokeSelfTokenRequest) ProtoMessage() {}
-
-func (x *RevokeSelfTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_agent_service_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RevokeSelfTokenRequest.ProtoReflect.Descriptor instead.
-func (*RevokeSelfTokenRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{10}
-}
-
-// RevokeSelfTokenResponse contains the new agent token.
-type RevokeSelfTokenResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// New agent token (nxa_xxx format).
-	NewToken      string `protobuf:"bytes,1,opt,name=new_token,json=newToken,proto3" json:"new_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RevokeSelfTokenResponse) Reset() {
-	*x = RevokeSelfTokenResponse{}
-	mi := &file_api_v1_agent_service_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RevokeSelfTokenResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RevokeSelfTokenResponse) ProtoMessage() {}
-
-func (x *RevokeSelfTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_agent_service_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RevokeSelfTokenResponse.ProtoReflect.Descriptor instead.
-func (*RevokeSelfTokenResponse) Descriptor() ([]byte, []int) {
-	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *RevokeSelfTokenResponse) GetNewToken() string {
-	if x != nil {
-		return x.NewToken
+func (x *SetAgentConfigRequest) GetWebhookUrl() string {
+	if x != nil && x.WebhookUrl != nil {
+		return *x.WebhookUrl
 	}
 	return ""
 }
 
-// SetDeliveryConfigRequest configures the agent's event delivery mode.
-type SetDeliveryConfigRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Delivery configuration (one of webhook, websocket, or none).
-	//
-	// Types that are valid to be assigned to Config:
-	//
-	//	*SetDeliveryConfigRequest_Webhook
-	//	*SetDeliveryConfigRequest_Websocket
-	//	*SetDeliveryConfigRequest_None
-	Config        isSetDeliveryConfigRequest_Config `protobuf_oneof:"config"`
+// SetAgentConfigResponse is returned after the agent config is updated.
+type SetAgentConfigResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SetDeliveryConfigRequest) Reset() {
-	*x = SetDeliveryConfigRequest{}
-	mi := &file_api_v1_agent_service_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetDeliveryConfigRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetDeliveryConfigRequest) ProtoMessage() {}
-
-func (x *SetDeliveryConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_agent_service_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetDeliveryConfigRequest.ProtoReflect.Descriptor instead.
-func (*SetDeliveryConfigRequest) Descriptor() ([]byte, []int) {
-	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *SetDeliveryConfigRequest) GetConfig() isSetDeliveryConfigRequest_Config {
-	if x != nil {
-		return x.Config
-	}
-	return nil
-}
-
-func (x *SetDeliveryConfigRequest) GetWebhook() *v1.WebhookDeliveryConfig {
-	if x != nil {
-		if x, ok := x.Config.(*SetDeliveryConfigRequest_Webhook); ok {
-			return x.Webhook
-		}
-	}
-	return nil
-}
-
-func (x *SetDeliveryConfigRequest) GetWebsocket() *v1.WebSocketDeliveryConfig {
-	if x != nil {
-		if x, ok := x.Config.(*SetDeliveryConfigRequest_Websocket); ok {
-			return x.Websocket
-		}
-	}
-	return nil
-}
-
-func (x *SetDeliveryConfigRequest) GetNone() *v1.NoDeliveryConfig {
-	if x != nil {
-		if x, ok := x.Config.(*SetDeliveryConfigRequest_None); ok {
-			return x.None
-		}
-	}
-	return nil
-}
-
-type isSetDeliveryConfigRequest_Config interface {
-	isSetDeliveryConfigRequest_Config()
-}
-
-type SetDeliveryConfigRequest_Webhook struct {
-	// Switch to WEBHOOK mode with the given URL.
-	Webhook *v1.WebhookDeliveryConfig `protobuf:"bytes,1,opt,name=webhook,proto3,oneof"`
-}
-
-type SetDeliveryConfigRequest_Websocket struct {
-	// Switch to WEBSOCKET mode.
-	Websocket *v1.WebSocketDeliveryConfig `protobuf:"bytes,2,opt,name=websocket,proto3,oneof"`
-}
-
-type SetDeliveryConfigRequest_None struct {
-	// Stop all delivery (WEBHOOK mode with no URL).
-	None *v1.NoDeliveryConfig `protobuf:"bytes,3,opt,name=none,proto3,oneof"`
-}
-
-func (*SetDeliveryConfigRequest_Webhook) isSetDeliveryConfigRequest_Config() {}
-
-func (*SetDeliveryConfigRequest_Websocket) isSetDeliveryConfigRequest_Config() {}
-
-func (*SetDeliveryConfigRequest_None) isSetDeliveryConfigRequest_Config() {}
-
-// SetDeliveryConfigResponse is returned after delivery config is set.
-type SetDeliveryConfigResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Server-generated HMAC-SHA256 signing secret (webhook mode only).
-	// Empty for websocket and none modes.
-	WebhookSecret *string `protobuf:"bytes,1,opt,name=webhook_secret,json=webhookSecret,proto3,oneof" json:"webhook_secret,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetDeliveryConfigResponse) Reset() {
-	*x = SetDeliveryConfigResponse{}
+func (x *SetAgentConfigResponse) Reset() {
+	*x = SetAgentConfigResponse{}
 	mi := &file_api_v1_agent_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SetDeliveryConfigResponse) String() string {
+func (x *SetAgentConfigResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SetDeliveryConfigResponse) ProtoMessage() {}
+func (*SetAgentConfigResponse) ProtoMessage() {}
 
-func (x *SetDeliveryConfigResponse) ProtoReflect() protoreflect.Message {
+func (x *SetAgentConfigResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_v1_agent_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -716,70 +763,483 @@ func (x *SetDeliveryConfigResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetDeliveryConfigResponse.ProtoReflect.Descriptor instead.
-func (*SetDeliveryConfigResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use SetAgentConfigResponse.ProtoReflect.Descriptor instead.
+func (*SetAgentConfigResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *SetDeliveryConfigResponse) GetWebhookSecret() string {
-	if x != nil && x.WebhookSecret != nil {
-		return *x.WebhookSecret
+// DeleteMyAgentRequest permanently deletes an agent.
+type DeleteMyAgentRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target agent user ID.
+	AgentUserId   int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteMyAgentRequest) Reset() {
+	*x = DeleteMyAgentRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMyAgentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMyAgentRequest) ProtoMessage() {}
+
+func (x *DeleteMyAgentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMyAgentRequest.ProtoReflect.Descriptor instead.
+func (*DeleteMyAgentRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DeleteMyAgentRequest) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
+// DeleteMyAgentResponse is returned after the agent is deleted.
+type DeleteMyAgentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteMyAgentResponse) Reset() {
+	*x = DeleteMyAgentResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMyAgentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMyAgentResponse) ProtoMessage() {}
+
+func (x *DeleteMyAgentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMyAgentResponse.ProtoReflect.Descriptor instead.
+func (*DeleteMyAgentResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{15}
+}
+
+// RegenerateAgentTokenRequest regenerates an agent API token.
+type RegenerateAgentTokenRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target agent user ID.
+	AgentUserId   int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegenerateAgentTokenRequest) Reset() {
+	*x = RegenerateAgentTokenRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegenerateAgentTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegenerateAgentTokenRequest) ProtoMessage() {}
+
+func (x *RegenerateAgentTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegenerateAgentTokenRequest.ProtoReflect.Descriptor instead.
+func (*RegenerateAgentTokenRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *RegenerateAgentTokenRequest) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
+// RegenerateAgentTokenResponse contains the new token.
+type RegenerateAgentTokenResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// New API token (nxa_xxx format).
+	Token         string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegenerateAgentTokenResponse) Reset() {
+	*x = RegenerateAgentTokenResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegenerateAgentTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegenerateAgentTokenResponse) ProtoMessage() {}
+
+func (x *RegenerateAgentTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegenerateAgentTokenResponse.ProtoReflect.Descriptor instead.
+func (*RegenerateAgentTokenResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *RegenerateAgentTokenResponse) GetToken() string {
+	if x != nil {
+		return x.Token
 	}
 	return ""
+}
+
+// RegenerateAgentSecretKeyRequest regenerates an agent HMAC secret key.
+type RegenerateAgentSecretKeyRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target agent user ID.
+	AgentUserId   int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegenerateAgentSecretKeyRequest) Reset() {
+	*x = RegenerateAgentSecretKeyRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegenerateAgentSecretKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegenerateAgentSecretKeyRequest) ProtoMessage() {}
+
+func (x *RegenerateAgentSecretKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegenerateAgentSecretKeyRequest.ProtoReflect.Descriptor instead.
+func (*RegenerateAgentSecretKeyRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *RegenerateAgentSecretKeyRequest) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
+// RegenerateAgentSecretKeyResponse contains the new secret key.
+type RegenerateAgentSecretKeyResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// New HMAC secret key (plaintext).
+	SecretKey     string `protobuf:"bytes,1,opt,name=secret_key,json=secretKey,proto3" json:"secret_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegenerateAgentSecretKeyResponse) Reset() {
+	*x = RegenerateAgentSecretKeyResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegenerateAgentSecretKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegenerateAgentSecretKeyResponse) ProtoMessage() {}
+
+func (x *RegenerateAgentSecretKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegenerateAgentSecretKeyResponse.ProtoReflect.Descriptor instead.
+func (*RegenerateAgentSecretKeyResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *RegenerateAgentSecretKeyResponse) GetSecretKey() string {
+	if x != nil {
+		return x.SecretKey
+	}
+	return ""
+}
+
+// SetAgentMiniAppRequest configures the Mini App for an agent.
+type SetAgentMiniAppRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target agent user ID.
+	AgentUserId int32 `protobuf:"varint,1,opt,name=agent_user_id,json=agentUserId,proto3" json:"agent_user_id,omitempty"`
+	// Whether to enable Mini App.
+	Enabled bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Mini App entry URL (must be HTTPS).
+	Url string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+	// Allowed web origins for security validation.
+	AllowedOrigins []string `protobuf:"bytes,4,rep,name=allowed_origins,json=allowedOrigins,proto3" json:"allowed_origins,omitempty"`
+	// Permission bitmask.
+	Permissions   int32 `protobuf:"varint,5,opt,name=permissions,proto3" json:"permissions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetAgentMiniAppRequest) Reset() {
+	*x = SetAgentMiniAppRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetAgentMiniAppRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetAgentMiniAppRequest) ProtoMessage() {}
+
+func (x *SetAgentMiniAppRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetAgentMiniAppRequest.ProtoReflect.Descriptor instead.
+func (*SetAgentMiniAppRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *SetAgentMiniAppRequest) GetAgentUserId() int32 {
+	if x != nil {
+		return x.AgentUserId
+	}
+	return 0
+}
+
+func (x *SetAgentMiniAppRequest) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *SetAgentMiniAppRequest) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *SetAgentMiniAppRequest) GetAllowedOrigins() []string {
+	if x != nil {
+		return x.AllowedOrigins
+	}
+	return nil
+}
+
+func (x *SetAgentMiniAppRequest) GetPermissions() int32 {
+	if x != nil {
+		return x.Permissions
+	}
+	return 0
+}
+
+// SetAgentMiniAppResponse is returned after Mini App config is set.
+type SetAgentMiniAppResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetAgentMiniAppResponse) Reset() {
+	*x = SetAgentMiniAppResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetAgentMiniAppResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetAgentMiniAppResponse) ProtoMessage() {}
+
+func (x *SetAgentMiniAppResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetAgentMiniAppResponse.ProtoReflect.Descriptor instead.
+func (*SetAgentMiniAppResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{21}
 }
 
 var File_api_v1_agent_service_proto protoreflect.FileDescriptor
 
 const file_api_v1_agent_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapi/v1/agent_service.proto\x12\x06api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x15shared/v1/agent.proto\x1a\x17shared/v1/options.proto\x1a\x14shared/v1/user.proto\"<\n" +
+	"\x1aapi/v1/agent_service.proto\x12\x06api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x15shared/v1/agent.proto\x1a\x17shared/v1/options.proto\"<\n" +
 	"\x19ListFeaturedAgentsRequest\x12\x1f\n" +
-	"\x05limit\x18\x01 \x01(\x05B\t\xbaH\x06\x1a\x04\x182(\x00R\x05limit\"I\n" +
-	"\x1aListFeaturedAgentsResponse\x12+\n" +
-	"\x06agents\x18\x01 \x03(\v2\x13.shared.v1.UserInfoR\x06agents\"D\n" +
-	"\x15GetAgentDetailRequest\x12+\n" +
-	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\"F\n" +
-	"\x16GetAgentDetailResponse\x12,\n" +
-	"\x05agent\x18\x01 \x01(\v2\x16.shared.v1.AgentDetailR\x05agent\"\x15\n" +
-	"\x13GetSelfAgentRequest\"r\n" +
-	"\x14GetSelfAgentResponse\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.shared.v1.UserInfoR\x04user\x121\n" +
-	"\aprofile\x18\x02 \x01(\v2\x17.shared.v1.AgentProfileR\aprofile\"\xc8\x02\n" +
-	"\x16UpdateSelfAgentRequest\x12 \n" +
-	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x18@H\x00R\x04name\x88\x01\x01\x12,\n" +
+	"\x05limit\x18\x01 \x01(\x05B\t\xbaH\x06\x1a\x04\x182(\x00R\x05limit\"J\n" +
+	"\x1aListFeaturedAgentsResponse\x12,\n" +
+	"\x06agents\x18\x01 \x03(\v2\x14.shared.v1.AgentInfoR\x06agents\"B\n" +
+	"\x13GetAgentInfoRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\"B\n" +
+	"\x14GetAgentInfoResponse\x12*\n" +
+	"\x05agent\x18\x01 \x01(\v2\x14.shared.v1.AgentInfoR\x05agent\"\xb0\x01\n" +
+	"\x1bGetMiniAppLaunchDataRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\x12'\n" +
+	"\x0fconversation_id\x18\x02 \x01(\x03R\x0econversationId\x12\x1f\n" +
+	"\vstart_param\x18\x03 \x01(\tR\n" +
+	"startParam\x12\x1a\n" +
+	"\bplatform\x18\x04 \x01(\tR\bplatform\"]\n" +
+	"\x1cGetMiniAppLaunchDataResponse\x12\x1b\n" +
+	"\tinit_data\x18\x01 \x01(\tR\binitData\x12 \n" +
+	"\fmini_app_url\x18\x02 \x01(\tR\n" +
+	"miniAppUrl\"\x82\x01\n" +
+	"\x12CreateAgentRequest\x12%\n" +
+	"\busername\x18\x01 \x01(\tB\t\xbaH\x06r\x04\x10\x05\x18 R\busername\x12\x1d\n" +
+	"\x04name\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x10\x01\x18@R\x04name\x12&\n" +
+	"\tsignature\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\tsignature\"\x89\x01\n" +
+	"\x13CreateAgentResponse\x121\n" +
+	"\aprofile\x18\x01 \x01(\v2\x17.shared.v1.AgentProfileR\aprofile\x12\x1a\n" +
+	"\x05token\x18\x02 \x01(\tB\x04\x90\xb5\x18\x01R\x05token\x12#\n" +
 	"\n" +
-	"avatar_url\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x10H\x01R\tavatarUrl\x88\x01\x01\x12?\n" +
+	"secret_key\x18\x03 \x01(\tB\x04\x90\xb5\x18\x01R\tsecretKey\"\x15\n" +
+	"\x13ListMyAgentsRequest\"G\n" +
+	"\x14ListMyAgentsResponse\x12/\n" +
+	"\x06agents\x18\x01 \x03(\v2\x17.shared.v1.AgentProfileR\x06agents\"@\n" +
+	"\x11GetMyAgentRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\"G\n" +
+	"\x12GetMyAgentResponse\x121\n" +
+	"\aprofile\x18\x01 \x01(\v2\x17.shared.v1.AgentProfileR\aprofile\"\xa6\x03\n" +
+	"\x15SetAgentConfigRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\x12?\n" +
 	"\n" +
-	"visibility\x18\x03 \x01(\x0e2\x1a.shared.v1.AgentVisibilityH\x02R\n" +
+	"visibility\x18\x02 \x01(\x0e2\x1a.shared.v1.AgentVisibilityH\x00R\n" +
 	"visibility\x88\x01\x01\x12+\n" +
-	"\fip_whitelist\x18\x04 \x03(\tB\b\xbaH\x05\x92\x01\x02\x102R\vipWhitelist\x12<\n" +
-	"\bcommands\x18\x05 \x01(\v2\x1b.shared.v1.AgentCommandListH\x03R\bcommands\x88\x01\x01B\a\n" +
-	"\x05_nameB\r\n" +
-	"\v_avatar_urlB\r\n" +
+	"\fip_whitelist\x18\x03 \x03(\tB\b\xbaH\x05\x92\x01\x02\x102R\vipWhitelist\x12<\n" +
+	"\bcommands\x18\x04 \x01(\v2\x1b.shared.v1.AgentCommandListH\x01R\bcommands\x88\x01\x01\x12F\n" +
+	"\rdelivery_mode\x18\x05 \x01(\x0e2\x1c.shared.v1.AgentDeliveryModeH\x02R\fdeliveryMode\x88\x01\x01\x12.\n" +
+	"\vwebhook_url\x18\x06 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x10H\x03R\n" +
+	"webhookUrl\x88\x01\x01B\r\n" +
 	"\v_visibilityB\v\n" +
-	"\t_commands\"\x19\n" +
-	"\x17UpdateSelfAgentResponse\"\x18\n" +
-	"\x16DeleteSelfAgentRequest\"\x19\n" +
-	"\x17DeleteSelfAgentResponse\"\x18\n" +
-	"\x16RevokeSelfTokenRequest\"<\n" +
-	"\x17RevokeSelfTokenResponse\x12!\n" +
-	"\tnew_token\x18\x01 \x01(\tB\x04\x90\xb5\x18\x01R\bnewToken\"\xd9\x01\n" +
-	"\x18SetDeliveryConfigRequest\x12<\n" +
-	"\awebhook\x18\x01 \x01(\v2 .shared.v1.WebhookDeliveryConfigH\x00R\awebhook\x12B\n" +
-	"\twebsocket\x18\x02 \x01(\v2\".shared.v1.WebSocketDeliveryConfigH\x00R\twebsocket\x121\n" +
-	"\x04none\x18\x03 \x01(\v2\x1b.shared.v1.NoDeliveryConfigH\x00R\x04noneB\b\n" +
-	"\x06config\"`\n" +
-	"\x19SetDeliveryConfigResponse\x120\n" +
-	"\x0ewebhook_secret\x18\x01 \x01(\tB\x04\x90\xb5\x18\x01H\x00R\rwebhookSecret\x88\x01\x01B\x11\n" +
-	"\x0f_webhook_secret2\xfb\x04\n" +
+	"\t_commandsB\x10\n" +
+	"\x0e_delivery_modeB\x0e\n" +
+	"\f_webhook_url\"\x18\n" +
+	"\x16SetAgentConfigResponse\"C\n" +
+	"\x14DeleteMyAgentRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\"\x17\n" +
+	"\x15DeleteMyAgentResponse\"J\n" +
+	"\x1bRegenerateAgentTokenRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\":\n" +
+	"\x1cRegenerateAgentTokenResponse\x12\x1a\n" +
+	"\x05token\x18\x01 \x01(\tB\x04\x90\xb5\x18\x01R\x05token\"N\n" +
+	"\x1fRegenerateAgentSecretKeyRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\"G\n" +
+	" RegenerateAgentSecretKeyResponse\x12#\n" +
+	"\n" +
+	"secret_key\x18\x01 \x01(\tB\x04\x90\xb5\x18\x01R\tsecretKey\"\xbc\x01\n" +
+	"\x16SetAgentMiniAppRequest\x12+\n" +
+	"\ragent_user_id\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\vagentUserId\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x10\n" +
+	"\x03url\x18\x03 \x01(\tR\x03url\x12'\n" +
+	"\x0fallowed_origins\x18\x04 \x03(\tR\x0eallowedOrigins\x12 \n" +
+	"\vpermissions\x18\x05 \x01(\x05R\vpermissions\"\x19\n" +
+	"\x17SetAgentMiniAppResponse2\xec\a\n" +
 	"\fAgentService\x12[\n" +
-	"\x12ListFeaturedAgents\x12!.api.v1.ListFeaturedAgentsRequest\x1a\".api.v1.ListFeaturedAgentsResponse\x12O\n" +
-	"\x0eGetAgentDetail\x12\x1d.api.v1.GetAgentDetailRequest\x1a\x1e.api.v1.GetAgentDetailResponse\x12O\n" +
-	"\fGetSelfAgent\x12\x1b.api.v1.GetSelfAgentRequest\x1a\x1c.api.v1.GetSelfAgentResponse\"\x04\x98\xb5\x18\x01\x12X\n" +
-	"\x0fUpdateSelfAgent\x12\x1e.api.v1.UpdateSelfAgentRequest\x1a\x1f.api.v1.UpdateSelfAgentResponse\"\x04\x98\xb5\x18\x01\x12X\n" +
-	"\x0fDeleteSelfAgent\x12\x1e.api.v1.DeleteSelfAgentRequest\x1a\x1f.api.v1.DeleteSelfAgentResponse\"\x04\x98\xb5\x18\x01\x12X\n" +
-	"\x0fRevokeSelfToken\x12\x1e.api.v1.RevokeSelfTokenRequest\x1a\x1f.api.v1.RevokeSelfTokenResponse\"\x04\x98\xb5\x18\x01\x12^\n" +
-	"\x11SetDeliveryConfig\x12 .api.v1.SetDeliveryConfigRequest\x1a!.api.v1.SetDeliveryConfigResponse\"\x04\x98\xb5\x18\x01B\x8e\x01\n" +
+	"\x12ListFeaturedAgents\x12!.api.v1.ListFeaturedAgentsRequest\x1a\".api.v1.ListFeaturedAgentsResponse\x12I\n" +
+	"\fGetAgentInfo\x12\x1b.api.v1.GetAgentInfoRequest\x1a\x1c.api.v1.GetAgentInfoResponse\x12g\n" +
+	"\x14GetMiniAppLaunchData\x12#.api.v1.GetMiniAppLaunchDataRequest\x1a$.api.v1.GetMiniAppLaunchDataResponse\"\x04\xa0\xb5\x18\x01\x12L\n" +
+	"\vCreateAgent\x12\x1a.api.v1.CreateAgentRequest\x1a\x1b.api.v1.CreateAgentResponse\"\x04\xa0\xb5\x18\x01\x12O\n" +
+	"\fListMyAgents\x12\x1b.api.v1.ListMyAgentsRequest\x1a\x1c.api.v1.ListMyAgentsResponse\"\x04\xa0\xb5\x18\x01\x12I\n" +
+	"\n" +
+	"GetMyAgent\x12\x19.api.v1.GetMyAgentRequest\x1a\x1a.api.v1.GetMyAgentResponse\"\x04\xa0\xb5\x18\x01\x12U\n" +
+	"\x0eSetAgentConfig\x12\x1d.api.v1.SetAgentConfigRequest\x1a\x1e.api.v1.SetAgentConfigResponse\"\x04\xa0\xb5\x18\x01\x12R\n" +
+	"\rDeleteMyAgent\x12\x1c.api.v1.DeleteMyAgentRequest\x1a\x1d.api.v1.DeleteMyAgentResponse\"\x04\xa0\xb5\x18\x01\x12g\n" +
+	"\x14RegenerateAgentToken\x12#.api.v1.RegenerateAgentTokenRequest\x1a$.api.v1.RegenerateAgentTokenResponse\"\x04\xa0\xb5\x18\x01\x12s\n" +
+	"\x18RegenerateAgentSecretKey\x12'.api.v1.RegenerateAgentSecretKeyRequest\x1a(.api.v1.RegenerateAgentSecretKeyResponse\"\x04\xa0\xb5\x18\x01\x12X\n" +
+	"\x0fSetAgentMiniApp\x12\x1e.api.v1.SetAgentMiniAppRequest\x1a\x1f.api.v1.SetAgentMiniAppResponse\"\x04\xa0\xb5\x18\x01B\x8e\x01\n" +
 	"\n" +
 	"com.api.v1B\x11AgentServiceProtoP\x01Z4github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1\xa2\x02\x03AXX\xaa\x02\x06Api.V1\xca\x02\x06Api\\V1\xe2\x02\x12Api\\V1\\GPBMetadata\xea\x02\aApi::V1b\x06proto3"
 
@@ -795,60 +1255,72 @@ func file_api_v1_agent_service_proto_rawDescGZIP() []byte {
 	return file_api_v1_agent_service_proto_rawDescData
 }
 
-var file_api_v1_agent_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_api_v1_agent_service_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_api_v1_agent_service_proto_goTypes = []any{
-	(*ListFeaturedAgentsRequest)(nil),  // 0: api.v1.ListFeaturedAgentsRequest
-	(*ListFeaturedAgentsResponse)(nil), // 1: api.v1.ListFeaturedAgentsResponse
-	(*GetAgentDetailRequest)(nil),      // 2: api.v1.GetAgentDetailRequest
-	(*GetAgentDetailResponse)(nil),     // 3: api.v1.GetAgentDetailResponse
-	(*GetSelfAgentRequest)(nil),        // 4: api.v1.GetSelfAgentRequest
-	(*GetSelfAgentResponse)(nil),       // 5: api.v1.GetSelfAgentResponse
-	(*UpdateSelfAgentRequest)(nil),     // 6: api.v1.UpdateSelfAgentRequest
-	(*UpdateSelfAgentResponse)(nil),    // 7: api.v1.UpdateSelfAgentResponse
-	(*DeleteSelfAgentRequest)(nil),     // 8: api.v1.DeleteSelfAgentRequest
-	(*DeleteSelfAgentResponse)(nil),    // 9: api.v1.DeleteSelfAgentResponse
-	(*RevokeSelfTokenRequest)(nil),     // 10: api.v1.RevokeSelfTokenRequest
-	(*RevokeSelfTokenResponse)(nil),    // 11: api.v1.RevokeSelfTokenResponse
-	(*SetDeliveryConfigRequest)(nil),   // 12: api.v1.SetDeliveryConfigRequest
-	(*SetDeliveryConfigResponse)(nil),  // 13: api.v1.SetDeliveryConfigResponse
-	(*v1.UserInfo)(nil),                // 14: shared.v1.UserInfo
-	(*v1.AgentDetail)(nil),             // 15: shared.v1.AgentDetail
-	(*v1.AgentProfile)(nil),            // 16: shared.v1.AgentProfile
-	(v1.AgentVisibility)(0),            // 17: shared.v1.AgentVisibility
-	(*v1.AgentCommandList)(nil),        // 18: shared.v1.AgentCommandList
-	(*v1.WebhookDeliveryConfig)(nil),   // 19: shared.v1.WebhookDeliveryConfig
-	(*v1.WebSocketDeliveryConfig)(nil), // 20: shared.v1.WebSocketDeliveryConfig
-	(*v1.NoDeliveryConfig)(nil),        // 21: shared.v1.NoDeliveryConfig
+	(*ListFeaturedAgentsRequest)(nil),        // 0: api.v1.ListFeaturedAgentsRequest
+	(*ListFeaturedAgentsResponse)(nil),       // 1: api.v1.ListFeaturedAgentsResponse
+	(*GetAgentInfoRequest)(nil),              // 2: api.v1.GetAgentInfoRequest
+	(*GetAgentInfoResponse)(nil),             // 3: api.v1.GetAgentInfoResponse
+	(*GetMiniAppLaunchDataRequest)(nil),      // 4: api.v1.GetMiniAppLaunchDataRequest
+	(*GetMiniAppLaunchDataResponse)(nil),     // 5: api.v1.GetMiniAppLaunchDataResponse
+	(*CreateAgentRequest)(nil),               // 6: api.v1.CreateAgentRequest
+	(*CreateAgentResponse)(nil),              // 7: api.v1.CreateAgentResponse
+	(*ListMyAgentsRequest)(nil),              // 8: api.v1.ListMyAgentsRequest
+	(*ListMyAgentsResponse)(nil),             // 9: api.v1.ListMyAgentsResponse
+	(*GetMyAgentRequest)(nil),                // 10: api.v1.GetMyAgentRequest
+	(*GetMyAgentResponse)(nil),               // 11: api.v1.GetMyAgentResponse
+	(*SetAgentConfigRequest)(nil),            // 12: api.v1.SetAgentConfigRequest
+	(*SetAgentConfigResponse)(nil),           // 13: api.v1.SetAgentConfigResponse
+	(*DeleteMyAgentRequest)(nil),             // 14: api.v1.DeleteMyAgentRequest
+	(*DeleteMyAgentResponse)(nil),            // 15: api.v1.DeleteMyAgentResponse
+	(*RegenerateAgentTokenRequest)(nil),      // 16: api.v1.RegenerateAgentTokenRequest
+	(*RegenerateAgentTokenResponse)(nil),     // 17: api.v1.RegenerateAgentTokenResponse
+	(*RegenerateAgentSecretKeyRequest)(nil),  // 18: api.v1.RegenerateAgentSecretKeyRequest
+	(*RegenerateAgentSecretKeyResponse)(nil), // 19: api.v1.RegenerateAgentSecretKeyResponse
+	(*SetAgentMiniAppRequest)(nil),           // 20: api.v1.SetAgentMiniAppRequest
+	(*SetAgentMiniAppResponse)(nil),          // 21: api.v1.SetAgentMiniAppResponse
+	(*v1.AgentInfo)(nil),                     // 22: shared.v1.AgentInfo
+	(*v1.AgentProfile)(nil),                  // 23: shared.v1.AgentProfile
+	(v1.AgentVisibility)(0),                  // 24: shared.v1.AgentVisibility
+	(*v1.AgentCommandList)(nil),              // 25: shared.v1.AgentCommandList
+	(v1.AgentDeliveryMode)(0),                // 26: shared.v1.AgentDeliveryMode
 }
 var file_api_v1_agent_service_proto_depIdxs = []int32{
-	14, // 0: api.v1.ListFeaturedAgentsResponse.agents:type_name -> shared.v1.UserInfo
-	15, // 1: api.v1.GetAgentDetailResponse.agent:type_name -> shared.v1.AgentDetail
-	14, // 2: api.v1.GetSelfAgentResponse.user:type_name -> shared.v1.UserInfo
-	16, // 3: api.v1.GetSelfAgentResponse.profile:type_name -> shared.v1.AgentProfile
-	17, // 4: api.v1.UpdateSelfAgentRequest.visibility:type_name -> shared.v1.AgentVisibility
-	18, // 5: api.v1.UpdateSelfAgentRequest.commands:type_name -> shared.v1.AgentCommandList
-	19, // 6: api.v1.SetDeliveryConfigRequest.webhook:type_name -> shared.v1.WebhookDeliveryConfig
-	20, // 7: api.v1.SetDeliveryConfigRequest.websocket:type_name -> shared.v1.WebSocketDeliveryConfig
-	21, // 8: api.v1.SetDeliveryConfigRequest.none:type_name -> shared.v1.NoDeliveryConfig
-	0,  // 9: api.v1.AgentService.ListFeaturedAgents:input_type -> api.v1.ListFeaturedAgentsRequest
-	2,  // 10: api.v1.AgentService.GetAgentDetail:input_type -> api.v1.GetAgentDetailRequest
-	4,  // 11: api.v1.AgentService.GetSelfAgent:input_type -> api.v1.GetSelfAgentRequest
-	6,  // 12: api.v1.AgentService.UpdateSelfAgent:input_type -> api.v1.UpdateSelfAgentRequest
-	8,  // 13: api.v1.AgentService.DeleteSelfAgent:input_type -> api.v1.DeleteSelfAgentRequest
-	10, // 14: api.v1.AgentService.RevokeSelfToken:input_type -> api.v1.RevokeSelfTokenRequest
-	12, // 15: api.v1.AgentService.SetDeliveryConfig:input_type -> api.v1.SetDeliveryConfigRequest
-	1,  // 16: api.v1.AgentService.ListFeaturedAgents:output_type -> api.v1.ListFeaturedAgentsResponse
-	3,  // 17: api.v1.AgentService.GetAgentDetail:output_type -> api.v1.GetAgentDetailResponse
-	5,  // 18: api.v1.AgentService.GetSelfAgent:output_type -> api.v1.GetSelfAgentResponse
-	7,  // 19: api.v1.AgentService.UpdateSelfAgent:output_type -> api.v1.UpdateSelfAgentResponse
-	9,  // 20: api.v1.AgentService.DeleteSelfAgent:output_type -> api.v1.DeleteSelfAgentResponse
-	11, // 21: api.v1.AgentService.RevokeSelfToken:output_type -> api.v1.RevokeSelfTokenResponse
-	13, // 22: api.v1.AgentService.SetDeliveryConfig:output_type -> api.v1.SetDeliveryConfigResponse
-	16, // [16:23] is the sub-list for method output_type
-	9,  // [9:16] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	22, // 0: api.v1.ListFeaturedAgentsResponse.agents:type_name -> shared.v1.AgentInfo
+	22, // 1: api.v1.GetAgentInfoResponse.agent:type_name -> shared.v1.AgentInfo
+	23, // 2: api.v1.CreateAgentResponse.profile:type_name -> shared.v1.AgentProfile
+	23, // 3: api.v1.ListMyAgentsResponse.agents:type_name -> shared.v1.AgentProfile
+	23, // 4: api.v1.GetMyAgentResponse.profile:type_name -> shared.v1.AgentProfile
+	24, // 5: api.v1.SetAgentConfigRequest.visibility:type_name -> shared.v1.AgentVisibility
+	25, // 6: api.v1.SetAgentConfigRequest.commands:type_name -> shared.v1.AgentCommandList
+	26, // 7: api.v1.SetAgentConfigRequest.delivery_mode:type_name -> shared.v1.AgentDeliveryMode
+	0,  // 8: api.v1.AgentService.ListFeaturedAgents:input_type -> api.v1.ListFeaturedAgentsRequest
+	2,  // 9: api.v1.AgentService.GetAgentInfo:input_type -> api.v1.GetAgentInfoRequest
+	4,  // 10: api.v1.AgentService.GetMiniAppLaunchData:input_type -> api.v1.GetMiniAppLaunchDataRequest
+	6,  // 11: api.v1.AgentService.CreateAgent:input_type -> api.v1.CreateAgentRequest
+	8,  // 12: api.v1.AgentService.ListMyAgents:input_type -> api.v1.ListMyAgentsRequest
+	10, // 13: api.v1.AgentService.GetMyAgent:input_type -> api.v1.GetMyAgentRequest
+	12, // 14: api.v1.AgentService.SetAgentConfig:input_type -> api.v1.SetAgentConfigRequest
+	14, // 15: api.v1.AgentService.DeleteMyAgent:input_type -> api.v1.DeleteMyAgentRequest
+	16, // 16: api.v1.AgentService.RegenerateAgentToken:input_type -> api.v1.RegenerateAgentTokenRequest
+	18, // 17: api.v1.AgentService.RegenerateAgentSecretKey:input_type -> api.v1.RegenerateAgentSecretKeyRequest
+	20, // 18: api.v1.AgentService.SetAgentMiniApp:input_type -> api.v1.SetAgentMiniAppRequest
+	1,  // 19: api.v1.AgentService.ListFeaturedAgents:output_type -> api.v1.ListFeaturedAgentsResponse
+	3,  // 20: api.v1.AgentService.GetAgentInfo:output_type -> api.v1.GetAgentInfoResponse
+	5,  // 21: api.v1.AgentService.GetMiniAppLaunchData:output_type -> api.v1.GetMiniAppLaunchDataResponse
+	7,  // 22: api.v1.AgentService.CreateAgent:output_type -> api.v1.CreateAgentResponse
+	9,  // 23: api.v1.AgentService.ListMyAgents:output_type -> api.v1.ListMyAgentsResponse
+	11, // 24: api.v1.AgentService.GetMyAgent:output_type -> api.v1.GetMyAgentResponse
+	13, // 25: api.v1.AgentService.SetAgentConfig:output_type -> api.v1.SetAgentConfigResponse
+	15, // 26: api.v1.AgentService.DeleteMyAgent:output_type -> api.v1.DeleteMyAgentResponse
+	17, // 27: api.v1.AgentService.RegenerateAgentToken:output_type -> api.v1.RegenerateAgentTokenResponse
+	19, // 28: api.v1.AgentService.RegenerateAgentSecretKey:output_type -> api.v1.RegenerateAgentSecretKeyResponse
+	21, // 29: api.v1.AgentService.SetAgentMiniApp:output_type -> api.v1.SetAgentMiniAppResponse
+	19, // [19:30] is the sub-list for method output_type
+	8,  // [8:19] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_agent_service_proto_init() }
@@ -856,20 +1328,14 @@ func file_api_v1_agent_service_proto_init() {
 	if File_api_v1_agent_service_proto != nil {
 		return
 	}
-	file_api_v1_agent_service_proto_msgTypes[6].OneofWrappers = []any{}
-	file_api_v1_agent_service_proto_msgTypes[12].OneofWrappers = []any{
-		(*SetDeliveryConfigRequest_Webhook)(nil),
-		(*SetDeliveryConfigRequest_Websocket)(nil),
-		(*SetDeliveryConfigRequest_None)(nil),
-	}
-	file_api_v1_agent_service_proto_msgTypes[13].OneofWrappers = []any{}
+	file_api_v1_agent_service_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_agent_service_proto_rawDesc), len(file_api_v1_agent_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -59,7 +59,7 @@ message Device {
 }
 
 // UserService handles user profile, device sessions, and username resolution.
-// Authenticated via Access Token.
+// Authenticated via Access Token (User or Agent).
 service UserService {
   // GetProfile returns the current user profile.
   //
@@ -80,9 +80,7 @@ service UserService {
   //   - UNAUTHENTICATED: Invalid or expired access token.
   //   - INVALID_ARGUMENT: Nickname exceeds 64 characters or signature
   //     exceeds 200 characters.
-  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {
-    option (shared.v1.user_only) = true;
-  }
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
 
   // ListDevices returns all active device sessions.
   //

@@ -283,38 +283,48 @@ func (x *AgentCommandList) GetItems() []*AgentCommandInfo {
 	return nil
 }
 
-// AgentDetail is the full detail view of an agent for profile pages.
-type AgentDetail struct {
+// AgentInfo is the public profile view of an agent, visible to all users.
+type AgentInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Agent user info (user_id, username, nickname, avatar_url, account_type).
 	// The signature field in UserInfo serves as the agent description.
 	User *UserInfo `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	// Registered slash commands.
-	Commands []*AgentCommandInfo `protobuf:"bytes,2,rep,name=commands,proto3" json:"commands,omitempty"`
 	// Agent creator info.
-	Creator *UserInfo `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
+	Creator *UserInfo `protobuf:"bytes,2,opt,name=creator,proto3" json:"creator,omitempty"`
 	// Agent status (active/deleted).
-	Status AgentStatus `protobuf:"varint,4,opt,name=status,proto3,enum=shared.v1.AgentStatus" json:"status,omitempty"`
+	Status AgentStatus `protobuf:"varint,3,opt,name=status,proto3,enum=shared.v1.AgentStatus" json:"status,omitempty"`
+	// Agent visibility (public/private).
+	Visibility AgentVisibility `protobuf:"varint,4,opt,name=visibility,proto3,enum=shared.v1.AgentVisibility" json:"visibility,omitempty"`
+	// Whether this is a system agent (e.g. AgentRoot).
+	IsSystemAgent bool `protobuf:"varint,5,opt,name=is_system_agent,json=isSystemAgent,proto3" json:"is_system_agent,omitempty"`
+	// Registered slash commands.
+	Commands []*AgentCommandInfo `protobuf:"bytes,6,rep,name=commands,proto3" json:"commands,omitempty"`
+	// Whether Mini App is enabled for this agent.
+	MiniAppEnabled bool `protobuf:"varint,7,opt,name=mini_app_enabled,json=miniAppEnabled,proto3" json:"mini_app_enabled,omitempty"`
+	// Mini App entry URL (HTTPS).
+	MiniAppUrl string `protobuf:"bytes,8,opt,name=mini_app_url,json=miniAppUrl,proto3" json:"mini_app_url,omitempty"`
+	// Mini App permission bitmask.
+	MiniAppPermissions int32 `protobuf:"varint,9,opt,name=mini_app_permissions,json=miniAppPermissions,proto3" json:"mini_app_permissions,omitempty"`
 	// Agent creation time (Unix ms).
-	CreatedAt     int64 `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt     int64 `protobuf:"varint,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AgentDetail) Reset() {
-	*x = AgentDetail{}
+func (x *AgentInfo) Reset() {
+	*x = AgentInfo{}
 	mi := &file_shared_v1_agent_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AgentDetail) String() string {
+func (x *AgentInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AgentDetail) ProtoMessage() {}
+func (*AgentInfo) ProtoMessage() {}
 
-func (x *AgentDetail) ProtoReflect() protoreflect.Message {
+func (x *AgentInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_shared_v1_agent_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -326,70 +336,114 @@ func (x *AgentDetail) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AgentDetail.ProtoReflect.Descriptor instead.
-func (*AgentDetail) Descriptor() ([]byte, []int) {
+// Deprecated: Use AgentInfo.ProtoReflect.Descriptor instead.
+func (*AgentInfo) Descriptor() ([]byte, []int) {
 	return file_shared_v1_agent_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *AgentDetail) GetUser() *UserInfo {
+func (x *AgentInfo) GetUser() *UserInfo {
 	if x != nil {
 		return x.User
 	}
 	return nil
 }
 
-func (x *AgentDetail) GetCommands() []*AgentCommandInfo {
-	if x != nil {
-		return x.Commands
-	}
-	return nil
-}
-
-func (x *AgentDetail) GetCreator() *UserInfo {
+func (x *AgentInfo) GetCreator() *UserInfo {
 	if x != nil {
 		return x.Creator
 	}
 	return nil
 }
 
-func (x *AgentDetail) GetStatus() AgentStatus {
+func (x *AgentInfo) GetStatus() AgentStatus {
 	if x != nil {
 		return x.Status
 	}
 	return AgentStatus_AGENT_STATUS_UNSPECIFIED
 }
 
-func (x *AgentDetail) GetCreatedAt() int64 {
+func (x *AgentInfo) GetVisibility() AgentVisibility {
+	if x != nil {
+		return x.Visibility
+	}
+	return AgentVisibility_AGENT_VISIBILITY_UNSPECIFIED
+}
+
+func (x *AgentInfo) GetIsSystemAgent() bool {
+	if x != nil {
+		return x.IsSystemAgent
+	}
+	return false
+}
+
+func (x *AgentInfo) GetCommands() []*AgentCommandInfo {
+	if x != nil {
+		return x.Commands
+	}
+	return nil
+}
+
+func (x *AgentInfo) GetMiniAppEnabled() bool {
+	if x != nil {
+		return x.MiniAppEnabled
+	}
+	return false
+}
+
+func (x *AgentInfo) GetMiniAppUrl() string {
+	if x != nil {
+		return x.MiniAppUrl
+	}
+	return ""
+}
+
+func (x *AgentInfo) GetMiniAppPermissions() int32 {
+	if x != nil {
+		return x.MiniAppPermissions
+	}
+	return 0
+}
+
+func (x *AgentInfo) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
 	}
 	return 0
 }
 
-// AgentProfile is the self-view of an agent's profile, returned to the
-// agent developer via AgentService.GetSelfAgent.
+// AgentProfile is the developer-facing full detail of an agent's profile.
 type AgentProfile struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Agent user info (user_id, username, nickname, avatar_url, account_type, signature).
+	User *UserInfo `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	// Agent status.
-	Status AgentStatus `protobuf:"varint,1,opt,name=status,proto3,enum=shared.v1.AgentStatus" json:"status,omitempty"`
+	Status AgentStatus `protobuf:"varint,2,opt,name=status,proto3,enum=shared.v1.AgentStatus" json:"status,omitempty"`
 	// Agent visibility.
-	Visibility AgentVisibility `protobuf:"varint,2,opt,name=visibility,proto3,enum=shared.v1.AgentVisibility" json:"visibility,omitempty"`
-	// Allowed IP addresses for API access.
-	IpWhitelist []string `protobuf:"bytes,3,rep,name=ip_whitelist,json=ipWhitelist,proto3" json:"ip_whitelist,omitempty"`
-	// Registered slash commands.
-	Commands []*AgentCommandInfo `protobuf:"bytes,4,rep,name=commands,proto3" json:"commands,omitempty"`
-	// Agent token prefix (e.g. "nxa_xxxx") for identification.
-	TokenPrefix string `protobuf:"bytes,5,opt,name=token_prefix,json=tokenPrefix,proto3" json:"token_prefix,omitempty"`
-	// Whether a webhook URL is configured.
-	WebhookConfigured bool `protobuf:"varint,6,opt,name=webhook_configured,json=webhookConfigured,proto3" json:"webhook_configured,omitempty"`
+	Visibility AgentVisibility `protobuf:"varint,3,opt,name=visibility,proto3,enum=shared.v1.AgentVisibility" json:"visibility,omitempty"`
 	// Whether this is a system agent.
-	IsSystemAgent bool `protobuf:"varint,7,opt,name=is_system_agent,json=isSystemAgent,proto3" json:"is_system_agent,omitempty"`
-	// Agent creation time (Unix ms).
-	CreatedAt int64 `protobuf:"varint,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	// Agent last update time (Unix ms).
-	UpdatedAt int64 `protobuf:"varint,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	IsSystemAgent bool `protobuf:"varint,4,opt,name=is_system_agent,json=isSystemAgent,proto3" json:"is_system_agent,omitempty"`
 	// Agent event delivery mode.
-	DeliveryMode  AgentDeliveryMode `protobuf:"varint,10,opt,name=delivery_mode,json=deliveryMode,proto3,enum=shared.v1.AgentDeliveryMode" json:"delivery_mode,omitempty"`
+	DeliveryMode AgentDeliveryMode `protobuf:"varint,5,opt,name=delivery_mode,json=deliveryMode,proto3,enum=shared.v1.AgentDeliveryMode" json:"delivery_mode,omitempty"`
+	// Agent token prefix (e.g. "nxa_xxxx") for identification.
+	TokenPrefix string `protobuf:"bytes,6,opt,name=token_prefix,json=tokenPrefix,proto3" json:"token_prefix,omitempty"`
+	// Secret key prefix for identification (e.g. "abcd1234...").
+	SecretKeyPrefix string `protobuf:"bytes,7,opt,name=secret_key_prefix,json=secretKeyPrefix,proto3" json:"secret_key_prefix,omitempty"`
+	// Allowed IP addresses for API access.
+	IpWhitelist []string `protobuf:"bytes,8,rep,name=ip_whitelist,json=ipWhitelist,proto3" json:"ip_whitelist,omitempty"`
+	// Registered slash commands.
+	Commands []*AgentCommandInfo `protobuf:"bytes,9,rep,name=commands,proto3" json:"commands,omitempty"`
+	// Whether Mini App is enabled.
+	MiniAppEnabled bool `protobuf:"varint,10,opt,name=mini_app_enabled,json=miniAppEnabled,proto3" json:"mini_app_enabled,omitempty"`
+	// Mini App entry URL.
+	MiniAppUrl string `protobuf:"bytes,11,opt,name=mini_app_url,json=miniAppUrl,proto3" json:"mini_app_url,omitempty"`
+	// Allowed web origins for Mini App security validation.
+	MiniAppAllowedOrigins []string `protobuf:"bytes,12,rep,name=mini_app_allowed_origins,json=miniAppAllowedOrigins,proto3" json:"mini_app_allowed_origins,omitempty"`
+	// Mini App permission bitmask.
+	MiniAppPermissions int32 `protobuf:"varint,13,opt,name=mini_app_permissions,json=miniAppPermissions,proto3" json:"mini_app_permissions,omitempty"`
+	// Agent creation time (Unix ms).
+	CreatedAt int64 `protobuf:"varint,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Agent last update time (Unix ms).
+	UpdatedAt     int64 `protobuf:"varint,15,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -424,6 +478,13 @@ func (*AgentProfile) Descriptor() ([]byte, []int) {
 	return file_shared_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
+func (x *AgentProfile) GetUser() *UserInfo {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 func (x *AgentProfile) GetStatus() AgentStatus {
 	if x != nil {
 		return x.Status
@@ -436,6 +497,34 @@ func (x *AgentProfile) GetVisibility() AgentVisibility {
 		return x.Visibility
 	}
 	return AgentVisibility_AGENT_VISIBILITY_UNSPECIFIED
+}
+
+func (x *AgentProfile) GetIsSystemAgent() bool {
+	if x != nil {
+		return x.IsSystemAgent
+	}
+	return false
+}
+
+func (x *AgentProfile) GetDeliveryMode() AgentDeliveryMode {
+	if x != nil {
+		return x.DeliveryMode
+	}
+	return AgentDeliveryMode_AGENT_DELIVERY_MODE_UNSPECIFIED
+}
+
+func (x *AgentProfile) GetTokenPrefix() string {
+	if x != nil {
+		return x.TokenPrefix
+	}
+	return ""
+}
+
+func (x *AgentProfile) GetSecretKeyPrefix() string {
+	if x != nil {
+		return x.SecretKeyPrefix
+	}
+	return ""
 }
 
 func (x *AgentProfile) GetIpWhitelist() []string {
@@ -452,25 +541,32 @@ func (x *AgentProfile) GetCommands() []*AgentCommandInfo {
 	return nil
 }
 
-func (x *AgentProfile) GetTokenPrefix() string {
+func (x *AgentProfile) GetMiniAppEnabled() bool {
 	if x != nil {
-		return x.TokenPrefix
+		return x.MiniAppEnabled
+	}
+	return false
+}
+
+func (x *AgentProfile) GetMiniAppUrl() string {
+	if x != nil {
+		return x.MiniAppUrl
 	}
 	return ""
 }
 
-func (x *AgentProfile) GetWebhookConfigured() bool {
+func (x *AgentProfile) GetMiniAppAllowedOrigins() []string {
 	if x != nil {
-		return x.WebhookConfigured
+		return x.MiniAppAllowedOrigins
 	}
-	return false
+	return nil
 }
 
-func (x *AgentProfile) GetIsSystemAgent() bool {
+func (x *AgentProfile) GetMiniAppPermissions() int32 {
 	if x != nil {
-		return x.IsSystemAgent
+		return x.MiniAppPermissions
 	}
-	return false
+	return 0
 }
 
 func (x *AgentProfile) GetCreatedAt() int64 {
@@ -487,133 +583,6 @@ func (x *AgentProfile) GetUpdatedAt() int64 {
 	return 0
 }
 
-func (x *AgentProfile) GetDeliveryMode() AgentDeliveryMode {
-	if x != nil {
-		return x.DeliveryMode
-	}
-	return AgentDeliveryMode_AGENT_DELIVERY_MODE_UNSPECIFIED
-}
-
-// WebhookDeliveryConfig configures webhook delivery.
-type WebhookDeliveryConfig struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Webhook URL (must be HTTPS).
-	Url           string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *WebhookDeliveryConfig) Reset() {
-	*x = WebhookDeliveryConfig{}
-	mi := &file_shared_v1_agent_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *WebhookDeliveryConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*WebhookDeliveryConfig) ProtoMessage() {}
-
-func (x *WebhookDeliveryConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_agent_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use WebhookDeliveryConfig.ProtoReflect.Descriptor instead.
-func (*WebhookDeliveryConfig) Descriptor() ([]byte, []int) {
-	return file_shared_v1_agent_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *WebhookDeliveryConfig) GetUrl() string {
-	if x != nil {
-		return x.Url
-	}
-	return ""
-}
-
-// WebSocketDeliveryConfig enables WebSocket delivery.
-type WebSocketDeliveryConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *WebSocketDeliveryConfig) Reset() {
-	*x = WebSocketDeliveryConfig{}
-	mi := &file_shared_v1_agent_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *WebSocketDeliveryConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*WebSocketDeliveryConfig) ProtoMessage() {}
-
-func (x *WebSocketDeliveryConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_agent_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use WebSocketDeliveryConfig.ProtoReflect.Descriptor instead.
-func (*WebSocketDeliveryConfig) Descriptor() ([]byte, []int) {
-	return file_shared_v1_agent_proto_rawDescGZIP(), []int{5}
-}
-
-// NoDeliveryConfig stops all event delivery.
-type NoDeliveryConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NoDeliveryConfig) Reset() {
-	*x = NoDeliveryConfig{}
-	mi := &file_shared_v1_agent_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NoDeliveryConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NoDeliveryConfig) ProtoMessage() {}
-
-func (x *NoDeliveryConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_shared_v1_agent_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use NoDeliveryConfig.ProtoReflect.Descriptor instead.
-func (*NoDeliveryConfig) Descriptor() ([]byte, []int) {
-	return file_shared_v1_agent_proto_rawDescGZIP(), []int{6}
-}
-
 var File_shared_v1_agent_proto protoreflect.FileDescriptor
 
 const file_shared_v1_agent_proto_rawDesc = "" +
@@ -624,35 +593,45 @@ const file_shared_v1_agent_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\x80\x02R\vdescription\"E\n" +
 	"\x10AgentCommandList\x121\n" +
-	"\x05items\x18\x01 \x03(\v2\x1b.shared.v1.AgentCommandInfoR\x05items\"\xed\x01\n" +
-	"\vAgentDetail\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.shared.v1.UserInfoR\x04user\x127\n" +
-	"\bcommands\x18\x02 \x03(\v2\x1b.shared.v1.AgentCommandInfoR\bcommands\x12-\n" +
-	"\acreator\x18\x03 \x01(\v2\x13.shared.v1.UserInfoR\acreator\x12.\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x16.shared.v1.AgentStatusR\x06status\x12\x1d\n" +
+	"\x05items\x18\x01 \x03(\v2\x1b.shared.v1.AgentCommandInfoR\x05items\"\xcd\x03\n" +
+	"\tAgentInfo\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.shared.v1.UserInfoR\x04user\x12-\n" +
+	"\acreator\x18\x02 \x01(\v2\x13.shared.v1.UserInfoR\acreator\x12.\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x16.shared.v1.AgentStatusR\x06status\x12:\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\x03R\tcreatedAt\"\xd1\x03\n" +
-	"\fAgentProfile\x12.\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x16.shared.v1.AgentStatusR\x06status\x12:\n" +
+	"visibility\x18\x04 \x01(\x0e2\x1a.shared.v1.AgentVisibilityR\n" +
+	"visibility\x12&\n" +
+	"\x0fis_system_agent\x18\x05 \x01(\bR\risSystemAgent\x127\n" +
+	"\bcommands\x18\x06 \x03(\v2\x1b.shared.v1.AgentCommandInfoR\bcommands\x12(\n" +
+	"\x10mini_app_enabled\x18\a \x01(\bR\x0eminiAppEnabled\x12 \n" +
+	"\fmini_app_url\x18\b \x01(\tR\n" +
+	"miniAppUrl\x120\n" +
+	"\x14mini_app_permissions\x18\t \x01(\x05R\x12miniAppPermissions\x12\x1d\n" +
 	"\n" +
-	"visibility\x18\x02 \x01(\x0e2\x1a.shared.v1.AgentVisibilityR\n" +
-	"visibility\x12!\n" +
-	"\fip_whitelist\x18\x03 \x03(\tR\vipWhitelist\x127\n" +
-	"\bcommands\x18\x04 \x03(\v2\x1b.shared.v1.AgentCommandInfoR\bcommands\x12!\n" +
-	"\ftoken_prefix\x18\x05 \x01(\tR\vtokenPrefix\x12-\n" +
-	"\x12webhook_configured\x18\x06 \x01(\bR\x11webhookConfigured\x12&\n" +
-	"\x0fis_system_agent\x18\a \x01(\bR\risSystemAgent\x12\x1d\n" +
+	"created_at\x18\n" +
+	" \x01(\x03R\tcreatedAt\"\xae\x05\n" +
+	"\fAgentProfile\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.shared.v1.UserInfoR\x04user\x12.\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x16.shared.v1.AgentStatusR\x06status\x12:\n" +
 	"\n" +
-	"created_at\x18\b \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"visibility\x18\x03 \x01(\x0e2\x1a.shared.v1.AgentVisibilityR\n" +
+	"visibility\x12&\n" +
+	"\x0fis_system_agent\x18\x04 \x01(\bR\risSystemAgent\x12A\n" +
+	"\rdelivery_mode\x18\x05 \x01(\x0e2\x1c.shared.v1.AgentDeliveryModeR\fdeliveryMode\x12!\n" +
+	"\ftoken_prefix\x18\x06 \x01(\tR\vtokenPrefix\x12*\n" +
+	"\x11secret_key_prefix\x18\a \x01(\tR\x0fsecretKeyPrefix\x12!\n" +
+	"\fip_whitelist\x18\b \x03(\tR\vipWhitelist\x127\n" +
+	"\bcommands\x18\t \x03(\v2\x1b.shared.v1.AgentCommandInfoR\bcommands\x12(\n" +
+	"\x10mini_app_enabled\x18\n" +
+	" \x01(\bR\x0eminiAppEnabled\x12 \n" +
+	"\fmini_app_url\x18\v \x01(\tR\n" +
+	"miniAppUrl\x127\n" +
+	"\x18mini_app_allowed_origins\x18\f \x03(\tR\x15miniAppAllowedOrigins\x120\n" +
+	"\x14mini_app_permissions\x18\r \x01(\x05R\x12miniAppPermissions\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\t \x01(\x03R\tupdatedAt\x12A\n" +
-	"\rdelivery_mode\x18\n" +
-	" \x01(\x0e2\x1c.shared.v1.AgentDeliveryModeR\fdeliveryMode\"5\n" +
-	"\x15WebhookDeliveryConfig\x12\x1c\n" +
-	"\x03url\x18\x01 \x01(\tB\n" +
-	"\xbaH\ar\x05\x10\x01\x18\x80\x10R\x03url\"\x19\n" +
-	"\x17WebSocketDeliveryConfig\"\x12\n" +
-	"\x10NoDeliveryConfig*^\n" +
+	"created_at\x18\x0e \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x0f \x01(\x03R\tupdatedAt*^\n" +
 	"\vAgentStatus\x12\x1c\n" +
 	"\x18AGENT_STATUS_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13AGENT_STATUS_ACTIVE\x10\x01\x12\x18\n" +
@@ -682,35 +661,34 @@ func file_shared_v1_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_shared_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_shared_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_shared_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_shared_v1_agent_proto_goTypes = []any{
-	(AgentStatus)(0),                // 0: shared.v1.AgentStatus
-	(AgentVisibility)(0),            // 1: shared.v1.AgentVisibility
-	(AgentDeliveryMode)(0),          // 2: shared.v1.AgentDeliveryMode
-	(*AgentCommandInfo)(nil),        // 3: shared.v1.AgentCommandInfo
-	(*AgentCommandList)(nil),        // 4: shared.v1.AgentCommandList
-	(*AgentDetail)(nil),             // 5: shared.v1.AgentDetail
-	(*AgentProfile)(nil),            // 6: shared.v1.AgentProfile
-	(*WebhookDeliveryConfig)(nil),   // 7: shared.v1.WebhookDeliveryConfig
-	(*WebSocketDeliveryConfig)(nil), // 8: shared.v1.WebSocketDeliveryConfig
-	(*NoDeliveryConfig)(nil),        // 9: shared.v1.NoDeliveryConfig
-	(*UserInfo)(nil),                // 10: shared.v1.UserInfo
+	(AgentStatus)(0),         // 0: shared.v1.AgentStatus
+	(AgentVisibility)(0),     // 1: shared.v1.AgentVisibility
+	(AgentDeliveryMode)(0),   // 2: shared.v1.AgentDeliveryMode
+	(*AgentCommandInfo)(nil), // 3: shared.v1.AgentCommandInfo
+	(*AgentCommandList)(nil), // 4: shared.v1.AgentCommandList
+	(*AgentInfo)(nil),        // 5: shared.v1.AgentInfo
+	(*AgentProfile)(nil),     // 6: shared.v1.AgentProfile
+	(*UserInfo)(nil),         // 7: shared.v1.UserInfo
 }
 var file_shared_v1_agent_proto_depIdxs = []int32{
 	3,  // 0: shared.v1.AgentCommandList.items:type_name -> shared.v1.AgentCommandInfo
-	10, // 1: shared.v1.AgentDetail.user:type_name -> shared.v1.UserInfo
-	3,  // 2: shared.v1.AgentDetail.commands:type_name -> shared.v1.AgentCommandInfo
-	10, // 3: shared.v1.AgentDetail.creator:type_name -> shared.v1.UserInfo
-	0,  // 4: shared.v1.AgentDetail.status:type_name -> shared.v1.AgentStatus
-	0,  // 5: shared.v1.AgentProfile.status:type_name -> shared.v1.AgentStatus
-	1,  // 6: shared.v1.AgentProfile.visibility:type_name -> shared.v1.AgentVisibility
-	3,  // 7: shared.v1.AgentProfile.commands:type_name -> shared.v1.AgentCommandInfo
-	2,  // 8: shared.v1.AgentProfile.delivery_mode:type_name -> shared.v1.AgentDeliveryMode
-	9,  // [9:9] is the sub-list for method output_type
-	9,  // [9:9] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	7,  // 1: shared.v1.AgentInfo.user:type_name -> shared.v1.UserInfo
+	7,  // 2: shared.v1.AgentInfo.creator:type_name -> shared.v1.UserInfo
+	0,  // 3: shared.v1.AgentInfo.status:type_name -> shared.v1.AgentStatus
+	1,  // 4: shared.v1.AgentInfo.visibility:type_name -> shared.v1.AgentVisibility
+	3,  // 5: shared.v1.AgentInfo.commands:type_name -> shared.v1.AgentCommandInfo
+	7,  // 6: shared.v1.AgentProfile.user:type_name -> shared.v1.UserInfo
+	0,  // 7: shared.v1.AgentProfile.status:type_name -> shared.v1.AgentStatus
+	1,  // 8: shared.v1.AgentProfile.visibility:type_name -> shared.v1.AgentVisibility
+	2,  // 9: shared.v1.AgentProfile.delivery_mode:type_name -> shared.v1.AgentDeliveryMode
+	3,  // 10: shared.v1.AgentProfile.commands:type_name -> shared.v1.AgentCommandInfo
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_shared_v1_agent_proto_init() }
@@ -725,7 +703,7 @@ func file_shared_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shared_v1_agent_proto_rawDesc), len(file_shared_v1_agent_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   7,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

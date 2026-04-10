@@ -36,94 +36,112 @@ const (
 	// AgentServiceListFeaturedAgentsProcedure is the fully-qualified name of the AgentService's
 	// ListFeaturedAgents RPC.
 	AgentServiceListFeaturedAgentsProcedure = "/api.v1.AgentService/ListFeaturedAgents"
-	// AgentServiceGetAgentDetailProcedure is the fully-qualified name of the AgentService's
-	// GetAgentDetail RPC.
-	AgentServiceGetAgentDetailProcedure = "/api.v1.AgentService/GetAgentDetail"
-	// AgentServiceGetSelfAgentProcedure is the fully-qualified name of the AgentService's GetSelfAgent
+	// AgentServiceGetAgentInfoProcedure is the fully-qualified name of the AgentService's GetAgentInfo
 	// RPC.
-	AgentServiceGetSelfAgentProcedure = "/api.v1.AgentService/GetSelfAgent"
-	// AgentServiceUpdateSelfAgentProcedure is the fully-qualified name of the AgentService's
-	// UpdateSelfAgent RPC.
-	AgentServiceUpdateSelfAgentProcedure = "/api.v1.AgentService/UpdateSelfAgent"
-	// AgentServiceDeleteSelfAgentProcedure is the fully-qualified name of the AgentService's
-	// DeleteSelfAgent RPC.
-	AgentServiceDeleteSelfAgentProcedure = "/api.v1.AgentService/DeleteSelfAgent"
-	// AgentServiceRevokeSelfTokenProcedure is the fully-qualified name of the AgentService's
-	// RevokeSelfToken RPC.
-	AgentServiceRevokeSelfTokenProcedure = "/api.v1.AgentService/RevokeSelfToken"
-	// AgentServiceSetDeliveryConfigProcedure is the fully-qualified name of the AgentService's
-	// SetDeliveryConfig RPC.
-	AgentServiceSetDeliveryConfigProcedure = "/api.v1.AgentService/SetDeliveryConfig"
+	AgentServiceGetAgentInfoProcedure = "/api.v1.AgentService/GetAgentInfo"
+	// AgentServiceGetMiniAppLaunchDataProcedure is the fully-qualified name of the AgentService's
+	// GetMiniAppLaunchData RPC.
+	AgentServiceGetMiniAppLaunchDataProcedure = "/api.v1.AgentService/GetMiniAppLaunchData"
+	// AgentServiceCreateAgentProcedure is the fully-qualified name of the AgentService's CreateAgent
+	// RPC.
+	AgentServiceCreateAgentProcedure = "/api.v1.AgentService/CreateAgent"
+	// AgentServiceListMyAgentsProcedure is the fully-qualified name of the AgentService's ListMyAgents
+	// RPC.
+	AgentServiceListMyAgentsProcedure = "/api.v1.AgentService/ListMyAgents"
+	// AgentServiceGetMyAgentProcedure is the fully-qualified name of the AgentService's GetMyAgent RPC.
+	AgentServiceGetMyAgentProcedure = "/api.v1.AgentService/GetMyAgent"
+	// AgentServiceSetAgentConfigProcedure is the fully-qualified name of the AgentService's
+	// SetAgentConfig RPC.
+	AgentServiceSetAgentConfigProcedure = "/api.v1.AgentService/SetAgentConfig"
+	// AgentServiceDeleteMyAgentProcedure is the fully-qualified name of the AgentService's
+	// DeleteMyAgent RPC.
+	AgentServiceDeleteMyAgentProcedure = "/api.v1.AgentService/DeleteMyAgent"
+	// AgentServiceRegenerateAgentTokenProcedure is the fully-qualified name of the AgentService's
+	// RegenerateAgentToken RPC.
+	AgentServiceRegenerateAgentTokenProcedure = "/api.v1.AgentService/RegenerateAgentToken"
+	// AgentServiceRegenerateAgentSecretKeyProcedure is the fully-qualified name of the AgentService's
+	// RegenerateAgentSecretKey RPC.
+	AgentServiceRegenerateAgentSecretKeyProcedure = "/api.v1.AgentService/RegenerateAgentSecretKey"
+	// AgentServiceSetAgentMiniAppProcedure is the fully-qualified name of the AgentService's
+	// SetAgentMiniApp RPC.
+	AgentServiceSetAgentMiniAppProcedure = "/api.v1.AgentService/SetAgentMiniApp"
 )
 
 // AgentServiceClient is a client for the api.v1.AgentService service.
 type AgentServiceClient interface {
 	// ListFeaturedAgents returns a batch of recommended agents for the
 	// discovery page. No pagination; call again to get a different batch.
-	// The recommendation strategy may change over time.
 	ListFeaturedAgents(context.Context, *connect.Request[v1.ListFeaturedAgentsRequest]) (*connect.Response[v1.ListFeaturedAgentsResponse], error)
-	// GetAgentDetail returns detailed info for a specific agent.
+	// GetAgentInfo returns public profile info for a specific agent.
 	//
 	// Error conditions:
 	//   - NOT_FOUND: Agent does not exist or has been deleted.
-	GetAgentDetail(context.Context, *connect.Request[v1.GetAgentDetailRequest]) (*connect.Response[v1.GetAgentDetailResponse], error)
-	// GetSelfAgent returns the current agent's profile.
+	GetAgentInfo(context.Context, *connect.Request[v1.GetAgentInfoRequest]) (*connect.Response[v1.GetAgentInfoResponse], error)
+	// GetMiniAppLaunchData generates signed initData for launching a Mini App.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	GetSelfAgent(context.Context, *connect.Request[v1.GetSelfAgentRequest]) (*connect.Response[v1.GetSelfAgentResponse], error)
-	// UpdateSelfAgent updates the current agent's profile fields.
+	//   - FAILED_PRECONDITION: Agent has not enabled Mini App.
+	//   - PERMISSION_DENIED: User has no access to this agent or conversation_id mismatch.
+	GetMiniAppLaunchData(context.Context, *connect.Request[v1.GetMiniAppLaunchDataRequest]) (*connect.Response[v1.GetMiniAppLaunchDataResponse], error)
+	// CreateAgent creates a new agent on behalf of the authenticated user.
 	//
 	// Side effects:
-	//   - If visibility changes from PRIVATE to PUBLIC, the agent becomes
-	//     discoverable in the client-facing agent directory.
+	//   - Establishes bidirectional contact relationship between developer and agent.
+	//   - Auto-generates Agent Token and secret_key.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	//   - INVALID_ARGUMENT: Invalid field values.
-	UpdateSelfAgent(context.Context, *connect.Request[v1.UpdateSelfAgentRequest]) (*connect.Response[v1.UpdateSelfAgentResponse], error)
-	// DeleteSelfAgent permanently deletes the current agent.
+	//   - ALREADY_EXISTS: Username is taken.
+	//   - INVALID_ARGUMENT: Invalid username or name.
+	CreateAgent(context.Context, *connect.Request[v1.CreateAgentRequest]) (*connect.Response[v1.CreateAgentResponse], error)
+	// ListMyAgents lists all agents created by the authenticated user.
+	ListMyAgents(context.Context, *connect.Request[v1.ListMyAgentsRequest]) (*connect.Response[v1.ListMyAgentsResponse], error)
+	// GetMyAgent returns the full profile of an agent owned by the authenticated user.
+	//
+	// Error conditions:
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	GetMyAgent(context.Context, *connect.Request[v1.GetMyAgentRequest]) (*connect.Response[v1.GetMyAgentResponse], error)
+	// SetAgentConfig updates configuration fields of an agent.
+	// Only provided fields are updated; omitted fields remain unchanged.
+	// When delivery_mode is set to WEBHOOK, webhook_url must also be provided.
+	//
+	// Error conditions:
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	//   - INVALID_ARGUMENT: Invalid field values or webhook URL.
+	SetAgentConfig(context.Context, *connect.Request[v1.SetAgentConfigRequest]) (*connect.Response[v1.SetAgentConfigResponse], error)
+	// DeleteMyAgent permanently deletes an agent owned by the authenticated user.
 	//
 	// Side effects:
 	//   - Sets agent status to DELETED.
 	//   - Removes the agent from all group memberships.
-	//   - Existing conversations with this agent become read-only.
+	//   - Existing conversations become read-only.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	DeleteSelfAgent(context.Context, *connect.Request[v1.DeleteSelfAgentRequest]) (*connect.Response[v1.DeleteSelfAgentResponse], error)
-	// RevokeSelfToken revokes the current agent token and issues a new one.
-	//
-	// Side effects:
-	//   - The current token becomes invalid immediately.
-	//   - A new token is returned in the response.
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	DeleteMyAgent(context.Context, *connect.Request[v1.DeleteMyAgentRequest]) (*connect.Response[v1.DeleteMyAgentResponse], error)
+	// RegenerateAgentToken regenerates the API token for an agent.
+	// The old token becomes invalid immediately.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	RevokeSelfToken(context.Context, *connect.Request[v1.RevokeSelfTokenRequest]) (*connect.Response[v1.RevokeSelfTokenResponse], error)
-	// SetDeliveryConfig configures the agent's event delivery mode.
-	// Supports three modes via oneof: webhook (HTTPS POST), websocket
-	// (persistent /ws connection), or none (stop all delivery).
-	// Modes are mutually exclusive; setting one clears the other.
-	//
-	// Side effects (webhook mode):
-	//   - Verifies the URL with a test request before saving.
-	//   - Generates a new signing secret (replaces any existing secret).
-	//   - Forces delivery_mode to WEBHOOK.
-	//
-	// Side effects (websocket mode):
-	//   - Clears any configured webhook URL and secret.
-	//   - Forces delivery_mode to WEBSOCKET.
-	//
-	// Side effects (none mode):
-	//   - Clears webhook config and resets delivery_mode to WEBHOOK.
-	//   - Stops all event delivery until reconfigured.
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	RegenerateAgentToken(context.Context, *connect.Request[v1.RegenerateAgentTokenRequest]) (*connect.Response[v1.RegenerateAgentTokenResponse], error)
+	// RegenerateAgentSecretKey regenerates the HMAC secret key for an agent.
+	// The old key becomes invalid immediately.
 	//
 	// Error conditions:
-	//   - FAILED_PRECONDITION: Agent is deleted.
-	//   - INVALID_ARGUMENT: Webhook URL is not a valid HTTPS endpoint.
-	//   - FAILED_PRECONDITION: Webhook URL verification failed.
-	SetDeliveryConfig(context.Context, *connect.Request[v1.SetDeliveryConfigRequest]) (*connect.Response[v1.SetDeliveryConfigResponse], error)
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	RegenerateAgentSecretKey(context.Context, *connect.Request[v1.RegenerateAgentSecretKeyRequest]) (*connect.Response[v1.RegenerateAgentSecretKeyResponse], error)
+	// SetAgentMiniApp configures the Mini App for an agent.
+	//
+	// Error conditions:
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	//   - INVALID_ARGUMENT: URL is not a valid HTTPS URL.
+	SetAgentMiniApp(context.Context, *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error)
 }
 
 // NewAgentServiceClient constructs a client for the api.v1.AgentService service. By default, it
@@ -143,40 +161,64 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(agentServiceMethods.ByName("ListFeaturedAgents")),
 			connect.WithClientOptions(opts...),
 		),
-		getAgentDetail: connect.NewClient[v1.GetAgentDetailRequest, v1.GetAgentDetailResponse](
+		getAgentInfo: connect.NewClient[v1.GetAgentInfoRequest, v1.GetAgentInfoResponse](
 			httpClient,
-			baseURL+AgentServiceGetAgentDetailProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("GetAgentDetail")),
+			baseURL+AgentServiceGetAgentInfoProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("GetAgentInfo")),
 			connect.WithClientOptions(opts...),
 		),
-		getSelfAgent: connect.NewClient[v1.GetSelfAgentRequest, v1.GetSelfAgentResponse](
+		getMiniAppLaunchData: connect.NewClient[v1.GetMiniAppLaunchDataRequest, v1.GetMiniAppLaunchDataResponse](
 			httpClient,
-			baseURL+AgentServiceGetSelfAgentProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("GetSelfAgent")),
+			baseURL+AgentServiceGetMiniAppLaunchDataProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("GetMiniAppLaunchData")),
 			connect.WithClientOptions(opts...),
 		),
-		updateSelfAgent: connect.NewClient[v1.UpdateSelfAgentRequest, v1.UpdateSelfAgentResponse](
+		createAgent: connect.NewClient[v1.CreateAgentRequest, v1.CreateAgentResponse](
 			httpClient,
-			baseURL+AgentServiceUpdateSelfAgentProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("UpdateSelfAgent")),
+			baseURL+AgentServiceCreateAgentProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("CreateAgent")),
 			connect.WithClientOptions(opts...),
 		),
-		deleteSelfAgent: connect.NewClient[v1.DeleteSelfAgentRequest, v1.DeleteSelfAgentResponse](
+		listMyAgents: connect.NewClient[v1.ListMyAgentsRequest, v1.ListMyAgentsResponse](
 			httpClient,
-			baseURL+AgentServiceDeleteSelfAgentProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("DeleteSelfAgent")),
+			baseURL+AgentServiceListMyAgentsProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("ListMyAgents")),
 			connect.WithClientOptions(opts...),
 		),
-		revokeSelfToken: connect.NewClient[v1.RevokeSelfTokenRequest, v1.RevokeSelfTokenResponse](
+		getMyAgent: connect.NewClient[v1.GetMyAgentRequest, v1.GetMyAgentResponse](
 			httpClient,
-			baseURL+AgentServiceRevokeSelfTokenProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("RevokeSelfToken")),
+			baseURL+AgentServiceGetMyAgentProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("GetMyAgent")),
 			connect.WithClientOptions(opts...),
 		),
-		setDeliveryConfig: connect.NewClient[v1.SetDeliveryConfigRequest, v1.SetDeliveryConfigResponse](
+		setAgentConfig: connect.NewClient[v1.SetAgentConfigRequest, v1.SetAgentConfigResponse](
 			httpClient,
-			baseURL+AgentServiceSetDeliveryConfigProcedure,
-			connect.WithSchema(agentServiceMethods.ByName("SetDeliveryConfig")),
+			baseURL+AgentServiceSetAgentConfigProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("SetAgentConfig")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteMyAgent: connect.NewClient[v1.DeleteMyAgentRequest, v1.DeleteMyAgentResponse](
+			httpClient,
+			baseURL+AgentServiceDeleteMyAgentProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("DeleteMyAgent")),
+			connect.WithClientOptions(opts...),
+		),
+		regenerateAgentToken: connect.NewClient[v1.RegenerateAgentTokenRequest, v1.RegenerateAgentTokenResponse](
+			httpClient,
+			baseURL+AgentServiceRegenerateAgentTokenProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("RegenerateAgentToken")),
+			connect.WithClientOptions(opts...),
+		),
+		regenerateAgentSecretKey: connect.NewClient[v1.RegenerateAgentSecretKeyRequest, v1.RegenerateAgentSecretKeyResponse](
+			httpClient,
+			baseURL+AgentServiceRegenerateAgentSecretKeyProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("RegenerateAgentSecretKey")),
+			connect.WithClientOptions(opts...),
+		),
+		setAgentMiniApp: connect.NewClient[v1.SetAgentMiniAppRequest, v1.SetAgentMiniAppResponse](
+			httpClient,
+			baseURL+AgentServiceSetAgentMiniAppProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("SetAgentMiniApp")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -184,13 +226,17 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // agentServiceClient implements AgentServiceClient.
 type agentServiceClient struct {
-	listFeaturedAgents *connect.Client[v1.ListFeaturedAgentsRequest, v1.ListFeaturedAgentsResponse]
-	getAgentDetail     *connect.Client[v1.GetAgentDetailRequest, v1.GetAgentDetailResponse]
-	getSelfAgent       *connect.Client[v1.GetSelfAgentRequest, v1.GetSelfAgentResponse]
-	updateSelfAgent    *connect.Client[v1.UpdateSelfAgentRequest, v1.UpdateSelfAgentResponse]
-	deleteSelfAgent    *connect.Client[v1.DeleteSelfAgentRequest, v1.DeleteSelfAgentResponse]
-	revokeSelfToken    *connect.Client[v1.RevokeSelfTokenRequest, v1.RevokeSelfTokenResponse]
-	setDeliveryConfig  *connect.Client[v1.SetDeliveryConfigRequest, v1.SetDeliveryConfigResponse]
+	listFeaturedAgents       *connect.Client[v1.ListFeaturedAgentsRequest, v1.ListFeaturedAgentsResponse]
+	getAgentInfo             *connect.Client[v1.GetAgentInfoRequest, v1.GetAgentInfoResponse]
+	getMiniAppLaunchData     *connect.Client[v1.GetMiniAppLaunchDataRequest, v1.GetMiniAppLaunchDataResponse]
+	createAgent              *connect.Client[v1.CreateAgentRequest, v1.CreateAgentResponse]
+	listMyAgents             *connect.Client[v1.ListMyAgentsRequest, v1.ListMyAgentsResponse]
+	getMyAgent               *connect.Client[v1.GetMyAgentRequest, v1.GetMyAgentResponse]
+	setAgentConfig           *connect.Client[v1.SetAgentConfigRequest, v1.SetAgentConfigResponse]
+	deleteMyAgent            *connect.Client[v1.DeleteMyAgentRequest, v1.DeleteMyAgentResponse]
+	regenerateAgentToken     *connect.Client[v1.RegenerateAgentTokenRequest, v1.RegenerateAgentTokenResponse]
+	regenerateAgentSecretKey *connect.Client[v1.RegenerateAgentSecretKeyRequest, v1.RegenerateAgentSecretKeyResponse]
+	setAgentMiniApp          *connect.Client[v1.SetAgentMiniAppRequest, v1.SetAgentMiniAppResponse]
 }
 
 // ListFeaturedAgents calls api.v1.AgentService.ListFeaturedAgents.
@@ -198,104 +244,131 @@ func (c *agentServiceClient) ListFeaturedAgents(ctx context.Context, req *connec
 	return c.listFeaturedAgents.CallUnary(ctx, req)
 }
 
-// GetAgentDetail calls api.v1.AgentService.GetAgentDetail.
-func (c *agentServiceClient) GetAgentDetail(ctx context.Context, req *connect.Request[v1.GetAgentDetailRequest]) (*connect.Response[v1.GetAgentDetailResponse], error) {
-	return c.getAgentDetail.CallUnary(ctx, req)
+// GetAgentInfo calls api.v1.AgentService.GetAgentInfo.
+func (c *agentServiceClient) GetAgentInfo(ctx context.Context, req *connect.Request[v1.GetAgentInfoRequest]) (*connect.Response[v1.GetAgentInfoResponse], error) {
+	return c.getAgentInfo.CallUnary(ctx, req)
 }
 
-// GetSelfAgent calls api.v1.AgentService.GetSelfAgent.
-func (c *agentServiceClient) GetSelfAgent(ctx context.Context, req *connect.Request[v1.GetSelfAgentRequest]) (*connect.Response[v1.GetSelfAgentResponse], error) {
-	return c.getSelfAgent.CallUnary(ctx, req)
+// GetMiniAppLaunchData calls api.v1.AgentService.GetMiniAppLaunchData.
+func (c *agentServiceClient) GetMiniAppLaunchData(ctx context.Context, req *connect.Request[v1.GetMiniAppLaunchDataRequest]) (*connect.Response[v1.GetMiniAppLaunchDataResponse], error) {
+	return c.getMiniAppLaunchData.CallUnary(ctx, req)
 }
 
-// UpdateSelfAgent calls api.v1.AgentService.UpdateSelfAgent.
-func (c *agentServiceClient) UpdateSelfAgent(ctx context.Context, req *connect.Request[v1.UpdateSelfAgentRequest]) (*connect.Response[v1.UpdateSelfAgentResponse], error) {
-	return c.updateSelfAgent.CallUnary(ctx, req)
+// CreateAgent calls api.v1.AgentService.CreateAgent.
+func (c *agentServiceClient) CreateAgent(ctx context.Context, req *connect.Request[v1.CreateAgentRequest]) (*connect.Response[v1.CreateAgentResponse], error) {
+	return c.createAgent.CallUnary(ctx, req)
 }
 
-// DeleteSelfAgent calls api.v1.AgentService.DeleteSelfAgent.
-func (c *agentServiceClient) DeleteSelfAgent(ctx context.Context, req *connect.Request[v1.DeleteSelfAgentRequest]) (*connect.Response[v1.DeleteSelfAgentResponse], error) {
-	return c.deleteSelfAgent.CallUnary(ctx, req)
+// ListMyAgents calls api.v1.AgentService.ListMyAgents.
+func (c *agentServiceClient) ListMyAgents(ctx context.Context, req *connect.Request[v1.ListMyAgentsRequest]) (*connect.Response[v1.ListMyAgentsResponse], error) {
+	return c.listMyAgents.CallUnary(ctx, req)
 }
 
-// RevokeSelfToken calls api.v1.AgentService.RevokeSelfToken.
-func (c *agentServiceClient) RevokeSelfToken(ctx context.Context, req *connect.Request[v1.RevokeSelfTokenRequest]) (*connect.Response[v1.RevokeSelfTokenResponse], error) {
-	return c.revokeSelfToken.CallUnary(ctx, req)
+// GetMyAgent calls api.v1.AgentService.GetMyAgent.
+func (c *agentServiceClient) GetMyAgent(ctx context.Context, req *connect.Request[v1.GetMyAgentRequest]) (*connect.Response[v1.GetMyAgentResponse], error) {
+	return c.getMyAgent.CallUnary(ctx, req)
 }
 
-// SetDeliveryConfig calls api.v1.AgentService.SetDeliveryConfig.
-func (c *agentServiceClient) SetDeliveryConfig(ctx context.Context, req *connect.Request[v1.SetDeliveryConfigRequest]) (*connect.Response[v1.SetDeliveryConfigResponse], error) {
-	return c.setDeliveryConfig.CallUnary(ctx, req)
+// SetAgentConfig calls api.v1.AgentService.SetAgentConfig.
+func (c *agentServiceClient) SetAgentConfig(ctx context.Context, req *connect.Request[v1.SetAgentConfigRequest]) (*connect.Response[v1.SetAgentConfigResponse], error) {
+	return c.setAgentConfig.CallUnary(ctx, req)
+}
+
+// DeleteMyAgent calls api.v1.AgentService.DeleteMyAgent.
+func (c *agentServiceClient) DeleteMyAgent(ctx context.Context, req *connect.Request[v1.DeleteMyAgentRequest]) (*connect.Response[v1.DeleteMyAgentResponse], error) {
+	return c.deleteMyAgent.CallUnary(ctx, req)
+}
+
+// RegenerateAgentToken calls api.v1.AgentService.RegenerateAgentToken.
+func (c *agentServiceClient) RegenerateAgentToken(ctx context.Context, req *connect.Request[v1.RegenerateAgentTokenRequest]) (*connect.Response[v1.RegenerateAgentTokenResponse], error) {
+	return c.regenerateAgentToken.CallUnary(ctx, req)
+}
+
+// RegenerateAgentSecretKey calls api.v1.AgentService.RegenerateAgentSecretKey.
+func (c *agentServiceClient) RegenerateAgentSecretKey(ctx context.Context, req *connect.Request[v1.RegenerateAgentSecretKeyRequest]) (*connect.Response[v1.RegenerateAgentSecretKeyResponse], error) {
+	return c.regenerateAgentSecretKey.CallUnary(ctx, req)
+}
+
+// SetAgentMiniApp calls api.v1.AgentService.SetAgentMiniApp.
+func (c *agentServiceClient) SetAgentMiniApp(ctx context.Context, req *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error) {
+	return c.setAgentMiniApp.CallUnary(ctx, req)
 }
 
 // AgentServiceHandler is an implementation of the api.v1.AgentService service.
 type AgentServiceHandler interface {
 	// ListFeaturedAgents returns a batch of recommended agents for the
 	// discovery page. No pagination; call again to get a different batch.
-	// The recommendation strategy may change over time.
 	ListFeaturedAgents(context.Context, *connect.Request[v1.ListFeaturedAgentsRequest]) (*connect.Response[v1.ListFeaturedAgentsResponse], error)
-	// GetAgentDetail returns detailed info for a specific agent.
+	// GetAgentInfo returns public profile info for a specific agent.
 	//
 	// Error conditions:
 	//   - NOT_FOUND: Agent does not exist or has been deleted.
-	GetAgentDetail(context.Context, *connect.Request[v1.GetAgentDetailRequest]) (*connect.Response[v1.GetAgentDetailResponse], error)
-	// GetSelfAgent returns the current agent's profile.
+	GetAgentInfo(context.Context, *connect.Request[v1.GetAgentInfoRequest]) (*connect.Response[v1.GetAgentInfoResponse], error)
+	// GetMiniAppLaunchData generates signed initData for launching a Mini App.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	GetSelfAgent(context.Context, *connect.Request[v1.GetSelfAgentRequest]) (*connect.Response[v1.GetSelfAgentResponse], error)
-	// UpdateSelfAgent updates the current agent's profile fields.
+	//   - FAILED_PRECONDITION: Agent has not enabled Mini App.
+	//   - PERMISSION_DENIED: User has no access to this agent or conversation_id mismatch.
+	GetMiniAppLaunchData(context.Context, *connect.Request[v1.GetMiniAppLaunchDataRequest]) (*connect.Response[v1.GetMiniAppLaunchDataResponse], error)
+	// CreateAgent creates a new agent on behalf of the authenticated user.
 	//
 	// Side effects:
-	//   - If visibility changes from PRIVATE to PUBLIC, the agent becomes
-	//     discoverable in the client-facing agent directory.
+	//   - Establishes bidirectional contact relationship between developer and agent.
+	//   - Auto-generates Agent Token and secret_key.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	//   - INVALID_ARGUMENT: Invalid field values.
-	UpdateSelfAgent(context.Context, *connect.Request[v1.UpdateSelfAgentRequest]) (*connect.Response[v1.UpdateSelfAgentResponse], error)
-	// DeleteSelfAgent permanently deletes the current agent.
+	//   - ALREADY_EXISTS: Username is taken.
+	//   - INVALID_ARGUMENT: Invalid username or name.
+	CreateAgent(context.Context, *connect.Request[v1.CreateAgentRequest]) (*connect.Response[v1.CreateAgentResponse], error)
+	// ListMyAgents lists all agents created by the authenticated user.
+	ListMyAgents(context.Context, *connect.Request[v1.ListMyAgentsRequest]) (*connect.Response[v1.ListMyAgentsResponse], error)
+	// GetMyAgent returns the full profile of an agent owned by the authenticated user.
+	//
+	// Error conditions:
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	GetMyAgent(context.Context, *connect.Request[v1.GetMyAgentRequest]) (*connect.Response[v1.GetMyAgentResponse], error)
+	// SetAgentConfig updates configuration fields of an agent.
+	// Only provided fields are updated; omitted fields remain unchanged.
+	// When delivery_mode is set to WEBHOOK, webhook_url must also be provided.
+	//
+	// Error conditions:
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	//   - INVALID_ARGUMENT: Invalid field values or webhook URL.
+	SetAgentConfig(context.Context, *connect.Request[v1.SetAgentConfigRequest]) (*connect.Response[v1.SetAgentConfigResponse], error)
+	// DeleteMyAgent permanently deletes an agent owned by the authenticated user.
 	//
 	// Side effects:
 	//   - Sets agent status to DELETED.
 	//   - Removes the agent from all group memberships.
-	//   - Existing conversations with this agent become read-only.
+	//   - Existing conversations become read-only.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	DeleteSelfAgent(context.Context, *connect.Request[v1.DeleteSelfAgentRequest]) (*connect.Response[v1.DeleteSelfAgentResponse], error)
-	// RevokeSelfToken revokes the current agent token and issues a new one.
-	//
-	// Side effects:
-	//   - The current token becomes invalid immediately.
-	//   - A new token is returned in the response.
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	DeleteMyAgent(context.Context, *connect.Request[v1.DeleteMyAgentRequest]) (*connect.Response[v1.DeleteMyAgentResponse], error)
+	// RegenerateAgentToken regenerates the API token for an agent.
+	// The old token becomes invalid immediately.
 	//
 	// Error conditions:
-	//   - UNAUTHENTICATED: Invalid or expired agent token.
-	RevokeSelfToken(context.Context, *connect.Request[v1.RevokeSelfTokenRequest]) (*connect.Response[v1.RevokeSelfTokenResponse], error)
-	// SetDeliveryConfig configures the agent's event delivery mode.
-	// Supports three modes via oneof: webhook (HTTPS POST), websocket
-	// (persistent /ws connection), or none (stop all delivery).
-	// Modes are mutually exclusive; setting one clears the other.
-	//
-	// Side effects (webhook mode):
-	//   - Verifies the URL with a test request before saving.
-	//   - Generates a new signing secret (replaces any existing secret).
-	//   - Forces delivery_mode to WEBHOOK.
-	//
-	// Side effects (websocket mode):
-	//   - Clears any configured webhook URL and secret.
-	//   - Forces delivery_mode to WEBSOCKET.
-	//
-	// Side effects (none mode):
-	//   - Clears webhook config and resets delivery_mode to WEBHOOK.
-	//   - Stops all event delivery until reconfigured.
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	RegenerateAgentToken(context.Context, *connect.Request[v1.RegenerateAgentTokenRequest]) (*connect.Response[v1.RegenerateAgentTokenResponse], error)
+	// RegenerateAgentSecretKey regenerates the HMAC secret key for an agent.
+	// The old key becomes invalid immediately.
 	//
 	// Error conditions:
-	//   - FAILED_PRECONDITION: Agent is deleted.
-	//   - INVALID_ARGUMENT: Webhook URL is not a valid HTTPS endpoint.
-	//   - FAILED_PRECONDITION: Webhook URL verification failed.
-	SetDeliveryConfig(context.Context, *connect.Request[v1.SetDeliveryConfigRequest]) (*connect.Response[v1.SetDeliveryConfigResponse], error)
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	RegenerateAgentSecretKey(context.Context, *connect.Request[v1.RegenerateAgentSecretKeyRequest]) (*connect.Response[v1.RegenerateAgentSecretKeyResponse], error)
+	// SetAgentMiniApp configures the Mini App for an agent.
+	//
+	// Error conditions:
+	//   - NOT_FOUND: Agent does not exist.
+	//   - PERMISSION_DENIED: Caller is not the agent creator.
+	//   - INVALID_ARGUMENT: URL is not a valid HTTPS URL.
+	SetAgentMiniApp(context.Context, *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error)
 }
 
 // NewAgentServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -311,58 +384,90 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(agentServiceMethods.ByName("ListFeaturedAgents")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceGetAgentDetailHandler := connect.NewUnaryHandler(
-		AgentServiceGetAgentDetailProcedure,
-		svc.GetAgentDetail,
-		connect.WithSchema(agentServiceMethods.ByName("GetAgentDetail")),
+	agentServiceGetAgentInfoHandler := connect.NewUnaryHandler(
+		AgentServiceGetAgentInfoProcedure,
+		svc.GetAgentInfo,
+		connect.WithSchema(agentServiceMethods.ByName("GetAgentInfo")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceGetSelfAgentHandler := connect.NewUnaryHandler(
-		AgentServiceGetSelfAgentProcedure,
-		svc.GetSelfAgent,
-		connect.WithSchema(agentServiceMethods.ByName("GetSelfAgent")),
+	agentServiceGetMiniAppLaunchDataHandler := connect.NewUnaryHandler(
+		AgentServiceGetMiniAppLaunchDataProcedure,
+		svc.GetMiniAppLaunchData,
+		connect.WithSchema(agentServiceMethods.ByName("GetMiniAppLaunchData")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceUpdateSelfAgentHandler := connect.NewUnaryHandler(
-		AgentServiceUpdateSelfAgentProcedure,
-		svc.UpdateSelfAgent,
-		connect.WithSchema(agentServiceMethods.ByName("UpdateSelfAgent")),
+	agentServiceCreateAgentHandler := connect.NewUnaryHandler(
+		AgentServiceCreateAgentProcedure,
+		svc.CreateAgent,
+		connect.WithSchema(agentServiceMethods.ByName("CreateAgent")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceDeleteSelfAgentHandler := connect.NewUnaryHandler(
-		AgentServiceDeleteSelfAgentProcedure,
-		svc.DeleteSelfAgent,
-		connect.WithSchema(agentServiceMethods.ByName("DeleteSelfAgent")),
+	agentServiceListMyAgentsHandler := connect.NewUnaryHandler(
+		AgentServiceListMyAgentsProcedure,
+		svc.ListMyAgents,
+		connect.WithSchema(agentServiceMethods.ByName("ListMyAgents")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceRevokeSelfTokenHandler := connect.NewUnaryHandler(
-		AgentServiceRevokeSelfTokenProcedure,
-		svc.RevokeSelfToken,
-		connect.WithSchema(agentServiceMethods.ByName("RevokeSelfToken")),
+	agentServiceGetMyAgentHandler := connect.NewUnaryHandler(
+		AgentServiceGetMyAgentProcedure,
+		svc.GetMyAgent,
+		connect.WithSchema(agentServiceMethods.ByName("GetMyAgent")),
 		connect.WithHandlerOptions(opts...),
 	)
-	agentServiceSetDeliveryConfigHandler := connect.NewUnaryHandler(
-		AgentServiceSetDeliveryConfigProcedure,
-		svc.SetDeliveryConfig,
-		connect.WithSchema(agentServiceMethods.ByName("SetDeliveryConfig")),
+	agentServiceSetAgentConfigHandler := connect.NewUnaryHandler(
+		AgentServiceSetAgentConfigProcedure,
+		svc.SetAgentConfig,
+		connect.WithSchema(agentServiceMethods.ByName("SetAgentConfig")),
+		connect.WithHandlerOptions(opts...),
+	)
+	agentServiceDeleteMyAgentHandler := connect.NewUnaryHandler(
+		AgentServiceDeleteMyAgentProcedure,
+		svc.DeleteMyAgent,
+		connect.WithSchema(agentServiceMethods.ByName("DeleteMyAgent")),
+		connect.WithHandlerOptions(opts...),
+	)
+	agentServiceRegenerateAgentTokenHandler := connect.NewUnaryHandler(
+		AgentServiceRegenerateAgentTokenProcedure,
+		svc.RegenerateAgentToken,
+		connect.WithSchema(agentServiceMethods.ByName("RegenerateAgentToken")),
+		connect.WithHandlerOptions(opts...),
+	)
+	agentServiceRegenerateAgentSecretKeyHandler := connect.NewUnaryHandler(
+		AgentServiceRegenerateAgentSecretKeyProcedure,
+		svc.RegenerateAgentSecretKey,
+		connect.WithSchema(agentServiceMethods.ByName("RegenerateAgentSecretKey")),
+		connect.WithHandlerOptions(opts...),
+	)
+	agentServiceSetAgentMiniAppHandler := connect.NewUnaryHandler(
+		AgentServiceSetAgentMiniAppProcedure,
+		svc.SetAgentMiniApp,
+		connect.WithSchema(agentServiceMethods.ByName("SetAgentMiniApp")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/api.v1.AgentService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AgentServiceListFeaturedAgentsProcedure:
 			agentServiceListFeaturedAgentsHandler.ServeHTTP(w, r)
-		case AgentServiceGetAgentDetailProcedure:
-			agentServiceGetAgentDetailHandler.ServeHTTP(w, r)
-		case AgentServiceGetSelfAgentProcedure:
-			agentServiceGetSelfAgentHandler.ServeHTTP(w, r)
-		case AgentServiceUpdateSelfAgentProcedure:
-			agentServiceUpdateSelfAgentHandler.ServeHTTP(w, r)
-		case AgentServiceDeleteSelfAgentProcedure:
-			agentServiceDeleteSelfAgentHandler.ServeHTTP(w, r)
-		case AgentServiceRevokeSelfTokenProcedure:
-			agentServiceRevokeSelfTokenHandler.ServeHTTP(w, r)
-		case AgentServiceSetDeliveryConfigProcedure:
-			agentServiceSetDeliveryConfigHandler.ServeHTTP(w, r)
+		case AgentServiceGetAgentInfoProcedure:
+			agentServiceGetAgentInfoHandler.ServeHTTP(w, r)
+		case AgentServiceGetMiniAppLaunchDataProcedure:
+			agentServiceGetMiniAppLaunchDataHandler.ServeHTTP(w, r)
+		case AgentServiceCreateAgentProcedure:
+			agentServiceCreateAgentHandler.ServeHTTP(w, r)
+		case AgentServiceListMyAgentsProcedure:
+			agentServiceListMyAgentsHandler.ServeHTTP(w, r)
+		case AgentServiceGetMyAgentProcedure:
+			agentServiceGetMyAgentHandler.ServeHTTP(w, r)
+		case AgentServiceSetAgentConfigProcedure:
+			agentServiceSetAgentConfigHandler.ServeHTTP(w, r)
+		case AgentServiceDeleteMyAgentProcedure:
+			agentServiceDeleteMyAgentHandler.ServeHTTP(w, r)
+		case AgentServiceRegenerateAgentTokenProcedure:
+			agentServiceRegenerateAgentTokenHandler.ServeHTTP(w, r)
+		case AgentServiceRegenerateAgentSecretKeyProcedure:
+			agentServiceRegenerateAgentSecretKeyHandler.ServeHTTP(w, r)
+		case AgentServiceSetAgentMiniAppProcedure:
+			agentServiceSetAgentMiniAppHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -376,26 +481,42 @@ func (UnimplementedAgentServiceHandler) ListFeaturedAgents(context.Context, *con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.ListFeaturedAgents is not implemented"))
 }
 
-func (UnimplementedAgentServiceHandler) GetAgentDetail(context.Context, *connect.Request[v1.GetAgentDetailRequest]) (*connect.Response[v1.GetAgentDetailResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.GetAgentDetail is not implemented"))
+func (UnimplementedAgentServiceHandler) GetAgentInfo(context.Context, *connect.Request[v1.GetAgentInfoRequest]) (*connect.Response[v1.GetAgentInfoResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.GetAgentInfo is not implemented"))
 }
 
-func (UnimplementedAgentServiceHandler) GetSelfAgent(context.Context, *connect.Request[v1.GetSelfAgentRequest]) (*connect.Response[v1.GetSelfAgentResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.GetSelfAgent is not implemented"))
+func (UnimplementedAgentServiceHandler) GetMiniAppLaunchData(context.Context, *connect.Request[v1.GetMiniAppLaunchDataRequest]) (*connect.Response[v1.GetMiniAppLaunchDataResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.GetMiniAppLaunchData is not implemented"))
 }
 
-func (UnimplementedAgentServiceHandler) UpdateSelfAgent(context.Context, *connect.Request[v1.UpdateSelfAgentRequest]) (*connect.Response[v1.UpdateSelfAgentResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.UpdateSelfAgent is not implemented"))
+func (UnimplementedAgentServiceHandler) CreateAgent(context.Context, *connect.Request[v1.CreateAgentRequest]) (*connect.Response[v1.CreateAgentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.CreateAgent is not implemented"))
 }
 
-func (UnimplementedAgentServiceHandler) DeleteSelfAgent(context.Context, *connect.Request[v1.DeleteSelfAgentRequest]) (*connect.Response[v1.DeleteSelfAgentResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.DeleteSelfAgent is not implemented"))
+func (UnimplementedAgentServiceHandler) ListMyAgents(context.Context, *connect.Request[v1.ListMyAgentsRequest]) (*connect.Response[v1.ListMyAgentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.ListMyAgents is not implemented"))
 }
 
-func (UnimplementedAgentServiceHandler) RevokeSelfToken(context.Context, *connect.Request[v1.RevokeSelfTokenRequest]) (*connect.Response[v1.RevokeSelfTokenResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.RevokeSelfToken is not implemented"))
+func (UnimplementedAgentServiceHandler) GetMyAgent(context.Context, *connect.Request[v1.GetMyAgentRequest]) (*connect.Response[v1.GetMyAgentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.GetMyAgent is not implemented"))
 }
 
-func (UnimplementedAgentServiceHandler) SetDeliveryConfig(context.Context, *connect.Request[v1.SetDeliveryConfigRequest]) (*connect.Response[v1.SetDeliveryConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.SetDeliveryConfig is not implemented"))
+func (UnimplementedAgentServiceHandler) SetAgentConfig(context.Context, *connect.Request[v1.SetAgentConfigRequest]) (*connect.Response[v1.SetAgentConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.SetAgentConfig is not implemented"))
+}
+
+func (UnimplementedAgentServiceHandler) DeleteMyAgent(context.Context, *connect.Request[v1.DeleteMyAgentRequest]) (*connect.Response[v1.DeleteMyAgentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.DeleteMyAgent is not implemented"))
+}
+
+func (UnimplementedAgentServiceHandler) RegenerateAgentToken(context.Context, *connect.Request[v1.RegenerateAgentTokenRequest]) (*connect.Response[v1.RegenerateAgentTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.RegenerateAgentToken is not implemented"))
+}
+
+func (UnimplementedAgentServiceHandler) RegenerateAgentSecretKey(context.Context, *connect.Request[v1.RegenerateAgentSecretKeyRequest]) (*connect.Response[v1.RegenerateAgentSecretKeyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.RegenerateAgentSecretKey is not implemented"))
+}
+
+func (UnimplementedAgentServiceHandler) SetAgentMiniApp(context.Context, *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.SetAgentMiniApp is not implemented"))
 }

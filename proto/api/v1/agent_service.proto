@@ -4,28 +4,28 @@ package api.v1;
 import "buf/validate/validate.proto";
 import "shared/v1/agent.proto";
 import "shared/v1/options.proto";
-import "shared/v1/user.proto";
 
 option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
 
-// AgentService handles agent discovery (client side) and agent
-// self-management (agent side, agent_only).
+// AgentService handles agent discovery, Mini App launch, and developer
+// management of agents.
 //
-// Agent lifecycle (client side):
-//   - Users discover agents via ContactService.SearchUsers (account_type=AGENT).
+// Discovery (any authenticated identity):
 //   - Users browse featured agents via ListFeaturedAgents.
-//   - Users view agent details via GetAgentDetail.
-//   - Users add agents as contacts via ContactService.AddContact.
-//   - Users remove agent contacts via ContactService.DeleteContact.
-//   - Users list their agent contacts via ContactService.ListContacts
-//     (filtered by account_type = "agent").
+//   - Users view agent public profile via GetAgentInfo.
 //
-// Agent self-management (agent_only):
-//   - Agents view their own profile via GetSelfAgent.
-//   - Agents update profile fields via UpdateSelfAgent.
-//   - Agents permanently delete themselves via DeleteSelfAgent.
-//   - Agents regenerate their token via RevokeSelfToken.
-//   - Agents configure event delivery via SetDeliveryConfig.
+// Mini App launch (user_only):
+//   - Users obtain signed initData to launch a Mini App via GetMiniAppLaunchData.
+//
+// Developer management (user_only):
+//   - Developers create agents via CreateAgent.
+//   - Developers list their agents via ListMyAgents.
+//   - Developers view full agent profile via GetMyAgent.
+//   - Developers update agent config via SetAgentConfig.
+//   - Developers delete agents via DeleteMyAgent.
+//   - Developers regenerate agent token via RegenerateAgentToken.
+//   - Developers regenerate agent secret key via RegenerateAgentSecretKey.
+//   - Developers configure Mini App via SetAgentMiniApp.
 //
 // Relationship to other services:
 //   - Adding an agent creates a conversation (type = AGENT) visible
@@ -36,85 +36,108 @@ service AgentService {
 
   // ListFeaturedAgents returns a batch of recommended agents for the
   // discovery page. No pagination; call again to get a different batch.
-  // The recommendation strategy may change over time.
   rpc ListFeaturedAgents(ListFeaturedAgentsRequest) returns (ListFeaturedAgentsResponse);
 
-  // GetAgentDetail returns detailed info for a specific agent.
+  // GetAgentInfo returns public profile info for a specific agent.
   //
   // Error conditions:
   //   - NOT_FOUND: Agent does not exist or has been deleted.
-  rpc GetAgentDetail(GetAgentDetailRequest) returns (GetAgentDetailResponse);
+  rpc GetAgentInfo(GetAgentInfoRequest) returns (GetAgentInfoResponse);
 
-  // ── Agent self-management (agent_only) ──
+  // ── Mini App launch (user_only) ──
 
-  // GetSelfAgent returns the current agent's profile.
+  // GetMiniAppLaunchData generates signed initData for launching a Mini App.
   //
   // Error conditions:
-  //   - UNAUTHENTICATED: Invalid or expired agent token.
-  rpc GetSelfAgent(GetSelfAgentRequest) returns (GetSelfAgentResponse) {
-    option (shared.v1.agent_only) = true;
+  //   - FAILED_PRECONDITION: Agent has not enabled Mini App.
+  //   - PERMISSION_DENIED: User has no access to this agent or conversation_id mismatch.
+  rpc GetMiniAppLaunchData(GetMiniAppLaunchDataRequest) returns (GetMiniAppLaunchDataResponse) {
+    option (shared.v1.user_only) = true;
   }
 
-  // UpdateSelfAgent updates the current agent's profile fields.
+  // ── Developer management (user_only) ──
+
+  // CreateAgent creates a new agent on behalf of the authenticated user.
   //
   // Side effects:
-  //   - If visibility changes from PRIVATE to PUBLIC, the agent becomes
-  //     discoverable in the client-facing agent directory.
+  //   - Establishes bidirectional contact relationship between developer and agent.
+  //   - Auto-generates Agent Token and secret_key.
   //
   // Error conditions:
-  //   - UNAUTHENTICATED: Invalid or expired agent token.
-  //   - INVALID_ARGUMENT: Invalid field values.
-  rpc UpdateSelfAgent(UpdateSelfAgentRequest) returns (UpdateSelfAgentResponse) {
-    option (shared.v1.agent_only) = true;
+  //   - ALREADY_EXISTS: Username is taken.
+  //   - INVALID_ARGUMENT: Invalid username or name.
+  rpc CreateAgent(CreateAgentRequest) returns (CreateAgentResponse) {
+    option (shared.v1.user_only) = true;
   }
 
-  // DeleteSelfAgent permanently deletes the current agent.
+  // ListMyAgents lists all agents created by the authenticated user.
+  rpc ListMyAgents(ListMyAgentsRequest) returns (ListMyAgentsResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // GetMyAgent returns the full profile of an agent owned by the authenticated user.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Agent does not exist.
+  //   - PERMISSION_DENIED: Caller is not the agent creator.
+  rpc GetMyAgent(GetMyAgentRequest) returns (GetMyAgentResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // SetAgentConfig updates configuration fields of an agent.
+  // Only provided fields are updated; omitted fields remain unchanged.
+  // When delivery_mode is set to WEBHOOK, webhook_url must also be provided.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Agent does not exist.
+  //   - PERMISSION_DENIED: Caller is not the agent creator.
+  //   - INVALID_ARGUMENT: Invalid field values or webhook URL.
+  rpc SetAgentConfig(SetAgentConfigRequest) returns (SetAgentConfigResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // DeleteMyAgent permanently deletes an agent owned by the authenticated user.
   //
   // Side effects:
   //   - Sets agent status to DELETED.
   //   - Removes the agent from all group memberships.
-  //   - Existing conversations with this agent become read-only.
+  //   - Existing conversations become read-only.
   //
   // Error conditions:
-  //   - UNAUTHENTICATED: Invalid or expired agent token.
-  rpc DeleteSelfAgent(DeleteSelfAgentRequest) returns (DeleteSelfAgentResponse) {
-    option (shared.v1.agent_only) = true;
+  //   - NOT_FOUND: Agent does not exist.
+  //   - PERMISSION_DENIED: Caller is not the agent creator.
+  rpc DeleteMyAgent(DeleteMyAgentRequest) returns (DeleteMyAgentResponse) {
+    option (shared.v1.user_only) = true;
   }
 
-  // RevokeSelfToken revokes the current agent token and issues a new one.
-  //
-  // Side effects:
-  //   - The current token becomes invalid immediately.
-  //   - A new token is returned in the response.
+  // RegenerateAgentToken regenerates the API token for an agent.
+  // The old token becomes invalid immediately.
   //
   // Error conditions:
-  //   - UNAUTHENTICATED: Invalid or expired agent token.
-  rpc RevokeSelfToken(RevokeSelfTokenRequest) returns (RevokeSelfTokenResponse) {
-    option (shared.v1.agent_only) = true;
+  //   - NOT_FOUND: Agent does not exist.
+  //   - PERMISSION_DENIED: Caller is not the agent creator.
+  rpc RegenerateAgentToken(RegenerateAgentTokenRequest) returns (RegenerateAgentTokenResponse) {
+    option (shared.v1.user_only) = true;
   }
 
-  // SetDeliveryConfig configures the agent's event delivery mode.
-  // Supports three modes via oneof: webhook (HTTPS POST), websocket
-  // (persistent /ws connection), or none (stop all delivery).
-  // Modes are mutually exclusive; setting one clears the other.
-  //
-  // Side effects (webhook mode):
-  //   - Verifies the URL with a test request before saving.
-  //   - Generates a new signing secret (replaces any existing secret).
-  //   - Forces delivery_mode to WEBHOOK.
-  // Side effects (websocket mode):
-  //   - Clears any configured webhook URL and secret.
-  //   - Forces delivery_mode to WEBSOCKET.
-  // Side effects (none mode):
-  //   - Clears webhook config and resets delivery_mode to WEBHOOK.
-  //   - Stops all event delivery until reconfigured.
+  // RegenerateAgentSecretKey regenerates the HMAC secret key for an agent.
+  // The old key becomes invalid immediately.
   //
   // Error conditions:
-  //   - FAILED_PRECONDITION: Agent is deleted.
-  //   - INVALID_ARGUMENT: Webhook URL is not a valid HTTPS endpoint.
-  //   - FAILED_PRECONDITION: Webhook URL verification failed.
-  rpc SetDeliveryConfig(SetDeliveryConfigRequest) returns (SetDeliveryConfigResponse) {
-    option (shared.v1.agent_only) = true;
+  //   - NOT_FOUND: Agent does not exist.
+  //   - PERMISSION_DENIED: Caller is not the agent creator.
+  rpc RegenerateAgentSecretKey(RegenerateAgentSecretKeyRequest) returns (RegenerateAgentSecretKeyResponse) {
+    option (shared.v1.user_only) = true;
+  }
+
+  // SetAgentMiniApp configures the Mini App for an agent.
+  //
+  // Error conditions:
+  //   - NOT_FOUND: Agent does not exist.
+  //   - PERMISSION_DENIED: Caller is not the agent creator.
+  //   - INVALID_ARGUMENT: URL is not a valid HTTPS URL.
+  rpc SetAgentMiniApp(SetAgentMiniAppRequest) returns (SetAgentMiniAppResponse) {
+    option (shared.v1.user_only) = true;
   }
 }
 
@@ -132,84 +155,159 @@ message ListFeaturedAgentsRequest {
 // ListFeaturedAgentsResponse contains the recommended agent batch.
 message ListFeaturedAgentsResponse {
   // Recommended agents.
-  repeated shared.v1.UserInfo agents = 1;
+  repeated shared.v1.AgentInfo agents = 1;
 }
 
-// GetAgentDetailRequest requests detailed info for a specific agent.
-message GetAgentDetailRequest {
+// GetAgentInfoRequest requests public profile info for a specific agent.
+message GetAgentInfoRequest {
   // Agent user ID.
   int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
 }
 
-// GetAgentDetailResponse contains the agent detail.
-message GetAgentDetailResponse {
-  // Agent detail info.
-  shared.v1.AgentDetail agent = 1;
+// GetAgentInfoResponse contains the agent public profile.
+message GetAgentInfoResponse {
+  // Agent public profile info.
+  shared.v1.AgentInfo agent = 1;
 }
 
-// ── Agent self-management messages ──
+// ── Mini App launch messages ──
 
-// GetSelfAgentRequest requests the current agent profile.
-message GetSelfAgentRequest {}
-
-// GetSelfAgentResponse contains the full agent profile (developer self-view).
-message GetSelfAgentResponse {
-  // Agent user info (public fields).
-  shared.v1.UserInfo user = 1;
-  // Agent profile (developer-visible fields).
-  shared.v1.AgentProfile profile = 2;
+// GetMiniAppLaunchDataRequest requests signed initData for launching a Mini App.
+message GetMiniAppLaunchDataRequest {
+  // Target agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
+  // Conversation ID (private chat or group chat). Zero means no conversation context.
+  int64 conversation_id = 2;
+  // Start parameter (from Direct Link or Card Action).
+  string start_param = 3;
+  // Client platform ("ios" / "android" / "desktop").
+  string platform = 4;
 }
 
-// UpdateSelfAgentRequest updates agent profile fields.
-// All fields are optional; only provided fields are updated.
-message UpdateSelfAgentRequest {
-  // New display name.
-  optional string name = 1 [(buf.validate.field).string.max_len = 64];
-  // New avatar URL.
-  optional string avatar_url = 2 [(buf.validate.field).string.max_len = 2048];
-  // New visibility setting.
-  optional shared.v1.AgentVisibility visibility = 3;
-  // New IP whitelist (replaces existing). Pass empty list to clear.
-  repeated string ip_whitelist = 4 [(buf.validate.field).repeated.max_items = 50];
+// GetMiniAppLaunchDataResponse contains the signed initData and Mini App URL.
+message GetMiniAppLaunchDataResponse {
+  // Signed initData query string.
+  string init_data = 1;
+  // Mini App entry URL.
+  string mini_app_url = 2;
+}
+
+// ── Developer management messages ──
+
+// CreateAgentRequest creates a new agent.
+message CreateAgentRequest {
+  // Agent unique username.
+  string username = 1 [(buf.validate.field).string = {
+    min_len: 5
+    max_len: 32
+  }];
+  // Agent display name.
+  string name = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+  // Agent signature / description.
+  string signature = 3 [(buf.validate.field).string.max_len = 256];
+}
+
+// CreateAgentResponse contains the created agent credentials and profile.
+message CreateAgentResponse {
+  // Full agent profile.
+  shared.v1.AgentProfile profile = 1;
+  // Generated API token (plaintext, returned only once).
+  string token = 2 [(shared.v1.sensitive) = true];
+  // Generated HMAC secret key (plaintext, returned only once).
+  string secret_key = 3 [(shared.v1.sensitive) = true];
+}
+
+// ListMyAgentsRequest lists agents owned by the authenticated user.
+message ListMyAgentsRequest {}
+
+// ListMyAgentsResponse contains the agent list.
+message ListMyAgentsResponse {
+  // Agent profiles (developer-visible details).
+  repeated shared.v1.AgentProfile agents = 1;
+}
+
+// GetMyAgentRequest requests the full profile of a specific agent.
+message GetMyAgentRequest {
+  // Target agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// GetMyAgentResponse contains the full agent profile.
+message GetMyAgentResponse {
+  // Agent profile (developer-visible fields, includes user info).
+  shared.v1.AgentProfile profile = 1;
+}
+
+// SetAgentConfigRequest updates agent configuration fields.
+// Only provided fields are updated; omitted fields remain unchanged.
+message SetAgentConfigRequest {
+  // Target agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
+  // Visibility setting.
+  optional shared.v1.AgentVisibility visibility = 2;
+  // IP whitelist (replaces existing). Pass empty list to clear.
+  repeated string ip_whitelist = 3 [(buf.validate.field).repeated.max_items = 50];
   // Slash commands (replaces existing, max 100). When set, replaces all
   // commands; omit to leave commands unchanged.
-  optional shared.v1.AgentCommandList commands = 5;
+  optional shared.v1.AgentCommandList commands = 4;
+  // Event delivery mode.
+  optional shared.v1.AgentDeliveryMode delivery_mode = 5;
+  // Webhook URL (required when delivery_mode is WEBHOOK, must be HTTPS).
+  optional string webhook_url = 6 [(buf.validate.field).string.max_len = 2048];
 }
 
-// UpdateSelfAgentResponse is returned after the agent is updated.
-message UpdateSelfAgentResponse {}
+// SetAgentConfigResponse is returned after the agent config is updated.
+message SetAgentConfigResponse {}
 
-// DeleteSelfAgentRequest permanently deletes the current agent.
-message DeleteSelfAgentRequest {}
-
-// DeleteSelfAgentResponse is returned after the agent is deleted.
-message DeleteSelfAgentResponse {}
-
-// RevokeSelfTokenRequest revokes the current agent token.
-message RevokeSelfTokenRequest {}
-
-// RevokeSelfTokenResponse contains the new agent token.
-message RevokeSelfTokenResponse {
-  // New agent token (nxa_xxx format).
-  string new_token = 1 [(shared.v1.sensitive) = true];
+// DeleteMyAgentRequest permanently deletes an agent.
+message DeleteMyAgentRequest {
+  // Target agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
 }
 
-// SetDeliveryConfigRequest configures the agent's event delivery mode.
-message SetDeliveryConfigRequest {
-  // Delivery configuration (one of webhook, websocket, or none).
-  oneof config {
-    // Switch to WEBHOOK mode with the given URL.
-    shared.v1.WebhookDeliveryConfig webhook = 1;
-    // Switch to WEBSOCKET mode.
-    shared.v1.WebSocketDeliveryConfig websocket = 2;
-    // Stop all delivery (WEBHOOK mode with no URL).
-    shared.v1.NoDeliveryConfig none = 3;
-  }
+// DeleteMyAgentResponse is returned after the agent is deleted.
+message DeleteMyAgentResponse {}
+
+// RegenerateAgentTokenRequest regenerates an agent API token.
+message RegenerateAgentTokenRequest {
+  // Target agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
 }
 
-// SetDeliveryConfigResponse is returned after delivery config is set.
-message SetDeliveryConfigResponse {
-  // Server-generated HMAC-SHA256 signing secret (webhook mode only).
-  // Empty for websocket and none modes.
-  optional string webhook_secret = 1 [(shared.v1.sensitive) = true];
+// RegenerateAgentTokenResponse contains the new token.
+message RegenerateAgentTokenResponse {
+  // New API token (nxa_xxx format).
+  string token = 1 [(shared.v1.sensitive) = true];
 }
+
+// RegenerateAgentSecretKeyRequest regenerates an agent HMAC secret key.
+message RegenerateAgentSecretKeyRequest {
+  // Target agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
+}
+
+// RegenerateAgentSecretKeyResponse contains the new secret key.
+message RegenerateAgentSecretKeyResponse {
+  // New HMAC secret key (plaintext).
+  string secret_key = 1 [(shared.v1.sensitive) = true];
+}
+
+// SetAgentMiniAppRequest configures the Mini App for an agent.
+message SetAgentMiniAppRequest {
+  // Target agent user ID.
+  int32 agent_user_id = 1 [(buf.validate.field).int32.gt = 0];
+  // Whether to enable Mini App.
+  bool enabled = 2;
+  // Mini App entry URL (must be HTTPS).
+  string url = 3;
+  // Allowed web origins for security validation.
+  repeated string allowed_origins = 4;
+  // Permission bitmask.
+  int32 permissions = 5;
+}
+
+// SetAgentMiniAppResponse is returned after Mini App config is set.
+message SetAgentMiniAppResponse {}

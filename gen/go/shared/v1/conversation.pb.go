@@ -142,7 +142,8 @@ func (ConversationActionType) EnumDescriptor() ([]byte, []int) {
 //
 // Unread count:
 // The server does NOT return unread_count. Clients calculate it locally:
-//   unread = last_message_id - last_read_message_id
+//
+//	unread = last_message_id - last_read_message_id
 type ConversationInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Conversation ID (deterministic encoding, not auto-increment).
@@ -161,7 +162,8 @@ type ConversationInfo struct {
 	// Clients compare this with their local max message_id to determine
 	// whether to pull new messages.
 	// Also used for client-side unread calculation:
-	//   unread = last_message_id - last_read_message_id
+	//
+	//	unread = last_message_id - last_read_message_id
 	LastMessageId int64 `protobuf:"varint,5,opt,name=last_message_id,json=lastMessageId,proto3" json:"last_message_id,omitempty"`
 	// Current user's last read message ID (read position).
 	LastReadMessageId int64 `protobuf:"varint,6,opt,name=last_read_message_id,json=lastReadMessageId,proto3" json:"last_read_message_id,omitempty"`

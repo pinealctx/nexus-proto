@@ -1369,24 +1369,25 @@ func (x *CardContent) GetFallbackText() string {
 // number for dedup and ordering.
 //
 // Lifecycle:
-//   1. START: A new streaming message is created (message_id assigned),
-//      StreamContent with phase=START is pushed. No text content yet.
-//   2. DELTA: Incremental text fragments are pushed via Update.
-//      Deltas are ephemeral push-only payloads.
-//   3. END: The final accumulated text is committed and phase=END
-//      is pushed with the complete content.
-//   4. ERROR: Generation failed; the error state is committed.
+//  1. START: A new streaming message is created (message_id assigned),
+//     StreamContent with phase=START is pushed. No text content yet.
+//  2. DELTA: Incremental text fragments are pushed via Update.
+//     Deltas are ephemeral push-only payloads.
+//  3. END: The final accumulated text is committed and phase=END
+//     is pushed with the complete content.
+//  4. ERROR: Generation failed; the error state is committed.
 //
 // Recovery after disconnect / app restart:
-//   Clients must track locally which stream messages have not reached
-//   a terminal phase (END or ERROR). On reconnect, call
-//   MessageService.GetMessage for each incomplete stream. The returned
-//   StreamContent reflects the current server-side state:
-//   - phase=END + accumulated_text: generation finished while offline.
-//   - phase=ERROR: generation failed.
-//   - phase=DELTA: still generating; client resumes receiving deltas
-//     from the long connection. Use accumulated_text as the baseline
-//     and append subsequent deltas.
+//
+//	Clients must track locally which stream messages have not reached
+//	a terminal phase (END or ERROR). On reconnect, call
+//	MessageService.GetMessage for each incomplete stream. The returned
+//	StreamContent reflects the current server-side state:
+//	- phase=END + accumulated_text: generation finished while offline.
+//	- phase=ERROR: generation failed.
+//	- phase=DELTA: still generating; client resumes receiving deltas
+//	  from the long connection. Use accumulated_text as the baseline
+//	  and append subsequent deltas.
 type StreamContent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Current lifecycle phase.
@@ -1404,6 +1405,7 @@ type StreamContent struct {
 	//   - ERROR phase: partial content generated before the error.
 	//   - HTTP query (GetMessage): current accumulated content regardless
 	//     of phase, enabling clients to recover after disconnect.
+	//
 	// Empty in real-time DELTA pushes (clients accumulate locally).
 	AccumulatedText string `protobuf:"bytes,5,opt,name=accumulated_text,json=accumulatedText,proto3" json:"accumulated_text,omitempty"`
 	// Rich text entities (@mentions, URLs, etc.) for the accumulated text.

@@ -1003,11 +1003,11 @@ const file_api_v1_user_service_proto_rawDesc = "" +
 	"\n" +
 	"UsersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\x05R\x03key\x12)\n" +
-	"\x05value\x18\x02 \x01(\v2\x13.shared.v1.UserInfoR\x05value:\x028\x012\xbe\x04\n" +
+	"\x05value\x18\x02 \x01(\v2\x13.shared.v1.UserInfoR\x05value:\x028\x012\xb8\x04\n" +
 	"\vUserService\x12C\n" +
 	"\n" +
-	"GetProfile\x12\x19.api.v1.GetProfileRequest\x1a\x1a.api.v1.GetProfileResponse\x12R\n" +
-	"\rUpdateProfile\x12\x1c.api.v1.UpdateProfileRequest\x1a\x1d.api.v1.UpdateProfileResponse\"\x04\xa0\xb5\x18\x01\x12L\n" +
+	"GetProfile\x12\x19.api.v1.GetProfileRequest\x1a\x1a.api.v1.GetProfileResponse\x12L\n" +
+	"\rUpdateProfile\x12\x1c.api.v1.UpdateProfileRequest\x1a\x1d.api.v1.UpdateProfileResponse\x12L\n" +
 	"\vListDevices\x12\x1a.api.v1.ListDevicesRequest\x1a\x1b.api.v1.ListDevicesResponse\"\x04\xa0\xb5\x18\x01\x12O\n" +
 	"\fRemoveDevice\x12\x1b.api.v1.RemoveDeviceRequest\x1a\x1c.api.v1.RemoveDeviceResponse\"\x04\xa0\xb5\x18\x01\x12L\n" +
 	"\vSetUsername\x12\x1a.api.v1.SetUsernameRequest\x1a\x1b.api.v1.SetUsernameResponse\"\x04\xa0\xb5\x18\x01\x12R\n" +
