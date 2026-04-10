@@ -1404,7 +1404,9 @@ func (*GetClientConfigRequest) Descriptor() ([]byte, []int) {
 type GetClientConfigResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Gateway connection endpoints.
-	Gateway       *GatewayEndpoints `protobuf:"bytes,1,opt,name=gateway,proto3" json:"gateway,omitempty"`
+	Gateway *GatewayEndpoints `protobuf:"bytes,1,opt,name=gateway,proto3" json:"gateway,omitempty"`
+	// Login method configuration.
+	Login         *LoginConfig `protobuf:"bytes,2,opt,name=login,proto3" json:"login,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1446,6 +1448,68 @@ func (x *GetClientConfigResponse) GetGateway() *GatewayEndpoints {
 	return nil
 }
 
+func (x *GetClientConfigResponse) GetLogin() *LoginConfig {
+	if x != nil {
+		return x.Login
+	}
+	return nil
+}
+
+// LoginConfig describes which login methods are enabled on this server.
+type LoginConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether email-based login (verify code + password) is enabled.
+	EmailEnabled bool `protobuf:"varint,1,opt,name=email_enabled,json=emailEnabled,proto3" json:"email_enabled,omitempty"`
+	// Whether phone-based login (verify code + password) is enabled.
+	PhoneEnabled  bool `protobuf:"varint,2,opt,name=phone_enabled,json=phoneEnabled,proto3" json:"phone_enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoginConfig) Reset() {
+	*x = LoginConfig{}
+	mi := &file_api_v1_auth_service_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginConfig) ProtoMessage() {}
+
+func (x *LoginConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_auth_service_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginConfig.ProtoReflect.Descriptor instead.
+func (*LoginConfig) Descriptor() ([]byte, []int) {
+	return file_api_v1_auth_service_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *LoginConfig) GetEmailEnabled() bool {
+	if x != nil {
+		return x.EmailEnabled
+	}
+	return false
+}
+
+func (x *LoginConfig) GetPhoneEnabled() bool {
+	if x != nil {
+		return x.PhoneEnabled
+	}
+	return false
+}
+
 // GatewayEndpoints contains the addresses clients use to connect to the gateway.
 type GatewayEndpoints struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1457,7 +1521,7 @@ type GatewayEndpoints struct {
 
 func (x *GatewayEndpoints) Reset() {
 	*x = GatewayEndpoints{}
-	mi := &file_api_v1_auth_service_proto_msgTypes[25]
+	mi := &file_api_v1_auth_service_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1469,7 +1533,7 @@ func (x *GatewayEndpoints) String() string {
 func (*GatewayEndpoints) ProtoMessage() {}
 
 func (x *GatewayEndpoints) ProtoReflect() protoreflect.Message {
-	mi := &file_api_v1_auth_service_proto_msgTypes[25]
+	mi := &file_api_v1_auth_service_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1482,7 +1546,7 @@ func (x *GatewayEndpoints) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GatewayEndpoints.ProtoReflect.Descriptor instead.
 func (*GatewayEndpoints) Descriptor() ([]byte, []int) {
-	return file_api_v1_auth_service_proto_rawDescGZIP(), []int{25}
+	return file_api_v1_auth_service_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *GatewayEndpoints) GetWsUrl() string {
@@ -1596,9 +1660,13 @@ const file_api_v1_auth_service_proto_rawDesc = "" +
 	"resetToken\x121\n" +
 	"\fnew_password\x18\x02 \x01(\tB\x0e\xbaH\ar\x05\x10\b\x18\x80\x01\x90\xb5\x18\x01R\vnewPassword\"\x1e\n" +
 	"\x1cResetPasswordConfirmResponse\"\x18\n" +
-	"\x16GetClientConfigRequest\"M\n" +
+	"\x16GetClientConfigRequest\"x\n" +
 	"\x17GetClientConfigResponse\x122\n" +
-	"\agateway\x18\x01 \x01(\v2\x18.api.v1.GatewayEndpointsR\agateway\")\n" +
+	"\agateway\x18\x01 \x01(\v2\x18.api.v1.GatewayEndpointsR\agateway\x12)\n" +
+	"\x05login\x18\x02 \x01(\v2\x13.api.v1.LoginConfigR\x05login\"W\n" +
+	"\vLoginConfig\x12#\n" +
+	"\remail_enabled\x18\x01 \x01(\bR\femailEnabled\x12#\n" +
+	"\rphone_enabled\x18\x02 \x01(\bR\fphoneEnabled\")\n" +
 	"\x10GatewayEndpoints\x12\x15\n" +
 	"\x06ws_url\x18\x01 \x01(\tR\x05wsUrl*_\n" +
 	"\fIdentityType\x12\x1d\n" +
@@ -1635,7 +1703,7 @@ func file_api_v1_auth_service_proto_rawDescGZIP() []byte {
 }
 
 var file_api_v1_auth_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
+var file_api_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_api_v1_auth_service_proto_goTypes = []any{
 	(IdentityType)(0),                    // 0: api.v1.IdentityType
 	(*DeviceInput)(nil),                  // 1: api.v1.DeviceInput
@@ -1663,51 +1731,53 @@ var file_api_v1_auth_service_proto_goTypes = []any{
 	(*ResetPasswordConfirmResponse)(nil), // 23: api.v1.ResetPasswordConfirmResponse
 	(*GetClientConfigRequest)(nil),       // 24: api.v1.GetClientConfigRequest
 	(*GetClientConfigResponse)(nil),      // 25: api.v1.GetClientConfigResponse
-	(*GatewayEndpoints)(nil),             // 26: api.v1.GatewayEndpoints
-	(v1.DeviceType)(0),                   // 27: shared.v1.DeviceType
-	(*v1.PushTokenInfo)(nil),             // 28: shared.v1.PushTokenInfo
-	(*User)(nil),                         // 29: api.v1.User
+	(*LoginConfig)(nil),                  // 26: api.v1.LoginConfig
+	(*GatewayEndpoints)(nil),             // 27: api.v1.GatewayEndpoints
+	(v1.DeviceType)(0),                   // 28: shared.v1.DeviceType
+	(*v1.PushTokenInfo)(nil),             // 29: shared.v1.PushTokenInfo
+	(*User)(nil),                         // 30: api.v1.User
 }
 var file_api_v1_auth_service_proto_depIdxs = []int32{
-	27, // 0: api.v1.DeviceInput.device_type:type_name -> shared.v1.DeviceType
-	28, // 1: api.v1.DeviceInput.push_token:type_name -> shared.v1.PushTokenInfo
+	28, // 0: api.v1.DeviceInput.device_type:type_name -> shared.v1.DeviceType
+	29, // 1: api.v1.DeviceInput.push_token:type_name -> shared.v1.PushTokenInfo
 	0,  // 2: api.v1.RequestVerifyCodeRequest.identity_type:type_name -> api.v1.IdentityType
 	1,  // 3: api.v1.VerifyCodeRequest.device_info:type_name -> api.v1.DeviceInput
-	29, // 4: api.v1.VerifyCodeResponse.user:type_name -> api.v1.User
+	30, // 4: api.v1.VerifyCodeResponse.user:type_name -> api.v1.User
 	0,  // 5: api.v1.LoginPasswordRequest.identity_type:type_name -> api.v1.IdentityType
 	1,  // 6: api.v1.LoginPasswordRequest.device_info:type_name -> api.v1.DeviceInput
-	29, // 7: api.v1.LoginPasswordResponse.user:type_name -> api.v1.User
+	30, // 7: api.v1.LoginPasswordResponse.user:type_name -> api.v1.User
 	0,  // 8: api.v1.ResetPasswordRequestRequest.identity_type:type_name -> api.v1.IdentityType
-	26, // 9: api.v1.GetClientConfigResponse.gateway:type_name -> api.v1.GatewayEndpoints
-	2,  // 10: api.v1.AuthService.RequestVerifyCode:input_type -> api.v1.RequestVerifyCodeRequest
-	4,  // 11: api.v1.AuthService.VerifyCode:input_type -> api.v1.VerifyCodeRequest
-	6,  // 12: api.v1.AuthService.LoginPassword:input_type -> api.v1.LoginPasswordRequest
-	8,  // 13: api.v1.AuthService.RefreshToken:input_type -> api.v1.RefreshTokenRequest
-	10, // 14: api.v1.AuthService.Logout:input_type -> api.v1.LogoutRequest
-	12, // 15: api.v1.AuthService.LogoutAll:input_type -> api.v1.LogoutAllRequest
-	14, // 16: api.v1.AuthService.SetupPassword:input_type -> api.v1.SetupPasswordRequest
-	16, // 17: api.v1.AuthService.ChangePassword:input_type -> api.v1.ChangePasswordRequest
-	18, // 18: api.v1.AuthService.ResetPasswordRequest:input_type -> api.v1.ResetPasswordRequestRequest
-	20, // 19: api.v1.AuthService.ResetPasswordVerify:input_type -> api.v1.ResetPasswordVerifyRequest
-	22, // 20: api.v1.AuthService.ResetPasswordConfirm:input_type -> api.v1.ResetPasswordConfirmRequest
-	24, // 21: api.v1.AuthService.GetClientConfig:input_type -> api.v1.GetClientConfigRequest
-	3,  // 22: api.v1.AuthService.RequestVerifyCode:output_type -> api.v1.RequestVerifyCodeResponse
-	5,  // 23: api.v1.AuthService.VerifyCode:output_type -> api.v1.VerifyCodeResponse
-	7,  // 24: api.v1.AuthService.LoginPassword:output_type -> api.v1.LoginPasswordResponse
-	9,  // 25: api.v1.AuthService.RefreshToken:output_type -> api.v1.RefreshTokenResponse
-	11, // 26: api.v1.AuthService.Logout:output_type -> api.v1.LogoutResponse
-	13, // 27: api.v1.AuthService.LogoutAll:output_type -> api.v1.LogoutAllResponse
-	15, // 28: api.v1.AuthService.SetupPassword:output_type -> api.v1.SetupPasswordResponse
-	17, // 29: api.v1.AuthService.ChangePassword:output_type -> api.v1.ChangePasswordResponse
-	19, // 30: api.v1.AuthService.ResetPasswordRequest:output_type -> api.v1.ResetPasswordRequestResponse
-	21, // 31: api.v1.AuthService.ResetPasswordVerify:output_type -> api.v1.ResetPasswordVerifyResponse
-	23, // 32: api.v1.AuthService.ResetPasswordConfirm:output_type -> api.v1.ResetPasswordConfirmResponse
-	25, // 33: api.v1.AuthService.GetClientConfig:output_type -> api.v1.GetClientConfigResponse
-	22, // [22:34] is the sub-list for method output_type
-	10, // [10:22] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	27, // 9: api.v1.GetClientConfigResponse.gateway:type_name -> api.v1.GatewayEndpoints
+	26, // 10: api.v1.GetClientConfigResponse.login:type_name -> api.v1.LoginConfig
+	2,  // 11: api.v1.AuthService.RequestVerifyCode:input_type -> api.v1.RequestVerifyCodeRequest
+	4,  // 12: api.v1.AuthService.VerifyCode:input_type -> api.v1.VerifyCodeRequest
+	6,  // 13: api.v1.AuthService.LoginPassword:input_type -> api.v1.LoginPasswordRequest
+	8,  // 14: api.v1.AuthService.RefreshToken:input_type -> api.v1.RefreshTokenRequest
+	10, // 15: api.v1.AuthService.Logout:input_type -> api.v1.LogoutRequest
+	12, // 16: api.v1.AuthService.LogoutAll:input_type -> api.v1.LogoutAllRequest
+	14, // 17: api.v1.AuthService.SetupPassword:input_type -> api.v1.SetupPasswordRequest
+	16, // 18: api.v1.AuthService.ChangePassword:input_type -> api.v1.ChangePasswordRequest
+	18, // 19: api.v1.AuthService.ResetPasswordRequest:input_type -> api.v1.ResetPasswordRequestRequest
+	20, // 20: api.v1.AuthService.ResetPasswordVerify:input_type -> api.v1.ResetPasswordVerifyRequest
+	22, // 21: api.v1.AuthService.ResetPasswordConfirm:input_type -> api.v1.ResetPasswordConfirmRequest
+	24, // 22: api.v1.AuthService.GetClientConfig:input_type -> api.v1.GetClientConfigRequest
+	3,  // 23: api.v1.AuthService.RequestVerifyCode:output_type -> api.v1.RequestVerifyCodeResponse
+	5,  // 24: api.v1.AuthService.VerifyCode:output_type -> api.v1.VerifyCodeResponse
+	7,  // 25: api.v1.AuthService.LoginPassword:output_type -> api.v1.LoginPasswordResponse
+	9,  // 26: api.v1.AuthService.RefreshToken:output_type -> api.v1.RefreshTokenResponse
+	11, // 27: api.v1.AuthService.Logout:output_type -> api.v1.LogoutResponse
+	13, // 28: api.v1.AuthService.LogoutAll:output_type -> api.v1.LogoutAllResponse
+	15, // 29: api.v1.AuthService.SetupPassword:output_type -> api.v1.SetupPasswordResponse
+	17, // 30: api.v1.AuthService.ChangePassword:output_type -> api.v1.ChangePasswordResponse
+	19, // 31: api.v1.AuthService.ResetPasswordRequest:output_type -> api.v1.ResetPasswordRequestResponse
+	21, // 32: api.v1.AuthService.ResetPasswordVerify:output_type -> api.v1.ResetPasswordVerifyResponse
+	23, // 33: api.v1.AuthService.ResetPasswordConfirm:output_type -> api.v1.ResetPasswordConfirmResponse
+	25, // 34: api.v1.AuthService.GetClientConfig:output_type -> api.v1.GetClientConfigResponse
+	23, // [23:35] is the sub-list for method output_type
+	11, // [11:23] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_auth_service_proto_init() }
@@ -1725,7 +1795,7 @@ func file_api_v1_auth_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_auth_service_proto_rawDesc), len(file_api_v1_auth_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   26,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

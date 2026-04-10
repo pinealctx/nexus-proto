@@ -461,6 +461,16 @@ message GetClientConfigRequest {}
 message GetClientConfigResponse {
   // Gateway connection endpoints.
   GatewayEndpoints gateway = 1;
+  // Login method configuration.
+  LoginConfig login = 2;
+}
+
+// LoginConfig describes which login methods are enabled on this server.
+message LoginConfig {
+  // Whether email-based login (verify code + password) is enabled.
+  bool email_enabled = 1;
+  // Whether phone-based login (verify code + password) is enabled.
+  bool phone_enabled = 2;
 }
 
 // GatewayEndpoints contains the addresses clients use to connect to the gateway.
