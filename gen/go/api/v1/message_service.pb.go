@@ -1240,12 +1240,16 @@ func (*ErrorStreamResponse) Descriptor() ([]byte, []int) {
 // AnswerCardActionRequest responds to a card action submission.
 type AnswerCardActionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Action ID from the webhook event.
-	ActionId string `protobuf:"bytes,1,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	// Conversation ID where the card action was submitted.
+	ConversationId int64 `protobuf:"varint,1,opt,name=conversation_id,json=conversationId,proto3" json:"conversation_id,omitempty"`
+	// Card message ID that the action belongs to.
+	MessageId int64 `protobuf:"varint,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	// Action ID from the webhook event (unique within conversation).
+	ActionId string `protobuf:"bytes,3,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
 	// Response text to display.
-	Text *string `protobuf:"bytes,2,opt,name=text,proto3,oneof" json:"text,omitempty"`
+	Text *string `protobuf:"bytes,4,opt,name=text,proto3,oneof" json:"text,omitempty"`
 	// Whether to show as alert dialog (otherwise toast).
-	ShowAlert     bool `protobuf:"varint,3,opt,name=show_alert,json=showAlert,proto3" json:"show_alert,omitempty"`
+	ShowAlert     bool `protobuf:"varint,5,opt,name=show_alert,json=showAlert,proto3" json:"show_alert,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1278,6 +1282,20 @@ func (x *AnswerCardActionRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use AnswerCardActionRequest.ProtoReflect.Descriptor instead.
 func (*AnswerCardActionRequest) Descriptor() ([]byte, []int) {
 	return file_api_v1_message_service_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *AnswerCardActionRequest) GetConversationId() int64 {
+	if x != nil {
+		return x.ConversationId
+	}
+	return 0
+}
+
+func (x *AnswerCardActionRequest) GetMessageId() int64 {
+	if x != nil {
+		return x.MessageId
+	}
+	return 0
 }
 
 func (x *AnswerCardActionRequest) GetActionId() string {
@@ -1425,12 +1443,15 @@ const file_api_v1_message_service_proto_rawDesc = "" +
 	"message_id\x18\x02 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\tmessageId\x12/\n" +
 	"\rerror_message\x18\x03 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\xe8\aR\ferrorMessage\"\x15\n" +
-	"\x13ErrorStreamResponse\"\x8a\x01\n" +
-	"\x17AnswerCardActionRequest\x12$\n" +
-	"\taction_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\bactionId\x12!\n" +
-	"\x04text\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01H\x00R\x04text\x88\x01\x01\x12\x1d\n" +
+	"\x13ErrorStreamResponse\"\xe4\x01\n" +
+	"\x17AnswerCardActionRequest\x120\n" +
+	"\x0fconversation_id\x18\x01 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\x0econversationId\x12&\n" +
 	"\n" +
-	"show_alert\x18\x03 \x01(\bR\tshowAlertB\a\n" +
+	"message_id\x18\x02 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\tmessageId\x12$\n" +
+	"\taction_id\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\bactionId\x12!\n" +
+	"\x04text\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01H\x00R\x04text\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"show_alert\x18\x05 \x01(\bR\tshowAlertB\a\n" +
 	"\x05_text\"\x1a\n" +
 	"\x18AnswerCardActionResponse2\xd0\a\n" +
 	"\x0eMessageService\x12F\n" +

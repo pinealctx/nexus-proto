@@ -1161,9 +1161,9 @@ func (x *ListBlockedResponse) GetBlocked() []*BlockedUserItem {
 // Search behavior depends on account_type filter:
 //   - USER / ALL: The server auto-detects the search dimension based on
 //     query format:
-//   - Pure digits, length 7-15 → phone exact match
-//   - Contains @ → email exact match
-//   - Otherwise → username exact match
+//     - Pure digits, length 7-15 → phone exact match
+//     - Contains @ → email exact match
+//     - Otherwise → username exact match
 //     Returns at most 1 result (exact match).
 //   - AGENT / ALL: Fuzzy match against agent nickname, username, and
 //     description. Only PUBLIC + ACTIVE agents are returned.

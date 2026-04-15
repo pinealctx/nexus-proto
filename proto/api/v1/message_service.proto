@@ -401,12 +401,16 @@ message ErrorStreamResponse {}
 
 // AnswerCardActionRequest responds to a card action submission.
 message AnswerCardActionRequest {
-  // Action ID from the webhook event.
-  string action_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Conversation ID where the card action was submitted.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Card message ID that the action belongs to.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Action ID from the webhook event (unique within conversation).
+  string action_id = 3 [(buf.validate.field).string.min_len = 1];
   // Response text to display.
-  optional string text = 2 [(buf.validate.field).string.max_len = 200];
+  optional string text = 4 [(buf.validate.field).string.max_len = 200];
   // Whether to show as alert dialog (otherwise toast).
-  bool show_alert = 3;
+  bool show_alert = 5;
 }
 
 // AnswerCardActionResponse is returned after the action is answered.
