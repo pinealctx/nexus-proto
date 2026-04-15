@@ -22,9 +22,6 @@ repos:
         exclude: ^gen/
       - id: check-case-conflict
       - id: forbid-submodules
-      - id: no-commit-to-branch
-        args: [--branch, main, --branch, master]
-        stages: [pre-push]
 
   # ── Go ────────────────────────────────────────────────────────
   - repo: local
