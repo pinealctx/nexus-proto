@@ -18,4 +18,5 @@ var (
 	ErrStreamAlreadyEnded     = New(connect.CodeFailedPrecondition, 6012, "STREAM_ALREADY_ENDED")
 	ErrMessageTypeMismatch    = New(connect.CodeInvalidArgument, 6013, "MESSAGE_TYPE_MISMATCH")
 	ErrNotCardMessage         = New(connect.CodeFailedPrecondition, 6014, "NOT_CARD_MESSAGE")
+	ErrInvalidCardContent     = New(connect.CodeInvalidArgument, 6015, "INVALID_CARD_CONTENT")
 )
