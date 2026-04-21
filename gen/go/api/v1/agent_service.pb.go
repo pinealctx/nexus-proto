@@ -1154,6 +1154,109 @@ func (*SetAgentMiniAppResponse) Descriptor() ([]byte, []int) {
 	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{21}
 }
 
+// UpdateAgentSelfConfigRequest updates agent-owned configuration fields.
+// The agent identity is derived from the auth token — no agent_user_id needed.
+type UpdateAgentSelfConfigRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Slash commands (replaces existing, max 100). When set, replaces all
+	// commands; omit to leave commands unchanged.
+	Commands *v1.AgentCommandList `protobuf:"bytes,1,opt,name=commands,proto3,oneof" json:"commands,omitempty"`
+	// Event delivery mode.
+	DeliveryMode *v1.AgentDeliveryMode `protobuf:"varint,2,opt,name=delivery_mode,json=deliveryMode,proto3,enum=shared.v1.AgentDeliveryMode,oneof" json:"delivery_mode,omitempty"`
+	// Webhook URL (required when delivery_mode is WEBHOOK, must be HTTPS).
+	WebhookUrl    *string `protobuf:"bytes,3,opt,name=webhook_url,json=webhookUrl,proto3,oneof" json:"webhook_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateAgentSelfConfigRequest) Reset() {
+	*x = UpdateAgentSelfConfigRequest{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateAgentSelfConfigRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateAgentSelfConfigRequest) ProtoMessage() {}
+
+func (x *UpdateAgentSelfConfigRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateAgentSelfConfigRequest.ProtoReflect.Descriptor instead.
+func (*UpdateAgentSelfConfigRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *UpdateAgentSelfConfigRequest) GetCommands() *v1.AgentCommandList {
+	if x != nil {
+		return x.Commands
+	}
+	return nil
+}
+
+func (x *UpdateAgentSelfConfigRequest) GetDeliveryMode() v1.AgentDeliveryMode {
+	if x != nil && x.DeliveryMode != nil {
+		return *x.DeliveryMode
+	}
+	return v1.AgentDeliveryMode(0)
+}
+
+func (x *UpdateAgentSelfConfigRequest) GetWebhookUrl() string {
+	if x != nil && x.WebhookUrl != nil {
+		return *x.WebhookUrl
+	}
+	return ""
+}
+
+// UpdateAgentSelfConfigResponse is returned after agent self-config is updated.
+type UpdateAgentSelfConfigResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateAgentSelfConfigResponse) Reset() {
+	*x = UpdateAgentSelfConfigResponse{}
+	mi := &file_api_v1_agent_service_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateAgentSelfConfigResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateAgentSelfConfigResponse) ProtoMessage() {}
+
+func (x *UpdateAgentSelfConfigResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1_agent_service_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateAgentSelfConfigResponse.ProtoReflect.Descriptor instead.
+func (*UpdateAgentSelfConfigResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1_agent_service_proto_rawDescGZIP(), []int{23}
+}
+
 var File_api_v1_agent_service_proto protoreflect.FileDescriptor
 
 const file_api_v1_agent_service_proto_rawDesc = "" +
@@ -1226,7 +1329,16 @@ const file_api_v1_agent_service_proto_rawDesc = "" +
 	"\x03url\x18\x03 \x01(\tR\x03url\x12'\n" +
 	"\x0fallowed_origins\x18\x04 \x03(\tR\x0eallowedOrigins\x12 \n" +
 	"\vpermissions\x18\x05 \x01(\x05R\vpermissions\"\x19\n" +
-	"\x17SetAgentMiniAppResponse2\xec\a\n" +
+	"\x17SetAgentMiniAppResponse\"\x83\x02\n" +
+	"\x1cUpdateAgentSelfConfigRequest\x12<\n" +
+	"\bcommands\x18\x01 \x01(\v2\x1b.shared.v1.AgentCommandListH\x00R\bcommands\x88\x01\x01\x12F\n" +
+	"\rdelivery_mode\x18\x02 \x01(\x0e2\x1c.shared.v1.AgentDeliveryModeH\x01R\fdeliveryMode\x88\x01\x01\x12.\n" +
+	"\vwebhook_url\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x10H\x02R\n" +
+	"webhookUrl\x88\x01\x01B\v\n" +
+	"\t_commandsB\x10\n" +
+	"\x0e_delivery_modeB\x0e\n" +
+	"\f_webhook_url\"\x1f\n" +
+	"\x1dUpdateAgentSelfConfigResponse2\xd8\b\n" +
 	"\fAgentService\x12[\n" +
 	"\x12ListFeaturedAgents\x12!.api.v1.ListFeaturedAgentsRequest\x1a\".api.v1.ListFeaturedAgentsResponse\x12I\n" +
 	"\fGetAgentInfo\x12\x1b.api.v1.GetAgentInfoRequest\x1a\x1c.api.v1.GetAgentInfoResponse\x12g\n" +
@@ -1239,7 +1351,8 @@ const file_api_v1_agent_service_proto_rawDesc = "" +
 	"\rDeleteMyAgent\x12\x1c.api.v1.DeleteMyAgentRequest\x1a\x1d.api.v1.DeleteMyAgentResponse\"\x04\xa0\xb5\x18\x01\x12g\n" +
 	"\x14RegenerateAgentToken\x12#.api.v1.RegenerateAgentTokenRequest\x1a$.api.v1.RegenerateAgentTokenResponse\"\x04\xa0\xb5\x18\x01\x12s\n" +
 	"\x18RegenerateAgentSecretKey\x12'.api.v1.RegenerateAgentSecretKeyRequest\x1a(.api.v1.RegenerateAgentSecretKeyResponse\"\x04\xa0\xb5\x18\x01\x12X\n" +
-	"\x0fSetAgentMiniApp\x12\x1e.api.v1.SetAgentMiniAppRequest\x1a\x1f.api.v1.SetAgentMiniAppResponse\"\x04\xa0\xb5\x18\x01B\x8e\x01\n" +
+	"\x0fSetAgentMiniApp\x12\x1e.api.v1.SetAgentMiniAppRequest\x1a\x1f.api.v1.SetAgentMiniAppResponse\"\x04\xa0\xb5\x18\x01\x12j\n" +
+	"\x15UpdateAgentSelfConfig\x12$.api.v1.UpdateAgentSelfConfigRequest\x1a%.api.v1.UpdateAgentSelfConfigResponse\"\x04\x98\xb5\x18\x01B\x8e\x01\n" +
 	"\n" +
 	"com.api.v1B\x11AgentServiceProtoP\x01Z4github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1\xa2\x02\x03AXX\xaa\x02\x06Api.V1\xca\x02\x06Api\\V1\xe2\x02\x12Api\\V1\\GPBMetadata\xea\x02\aApi::V1b\x06proto3"
 
@@ -1255,7 +1368,7 @@ func file_api_v1_agent_service_proto_rawDescGZIP() []byte {
 	return file_api_v1_agent_service_proto_rawDescData
 }
 
-var file_api_v1_agent_service_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_api_v1_agent_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_api_v1_agent_service_proto_goTypes = []any{
 	(*ListFeaturedAgentsRequest)(nil),        // 0: api.v1.ListFeaturedAgentsRequest
 	(*ListFeaturedAgentsResponse)(nil),       // 1: api.v1.ListFeaturedAgentsResponse
@@ -1279,48 +1392,54 @@ var file_api_v1_agent_service_proto_goTypes = []any{
 	(*RegenerateAgentSecretKeyResponse)(nil), // 19: api.v1.RegenerateAgentSecretKeyResponse
 	(*SetAgentMiniAppRequest)(nil),           // 20: api.v1.SetAgentMiniAppRequest
 	(*SetAgentMiniAppResponse)(nil),          // 21: api.v1.SetAgentMiniAppResponse
-	(*v1.AgentInfo)(nil),                     // 22: shared.v1.AgentInfo
-	(*v1.AgentProfile)(nil),                  // 23: shared.v1.AgentProfile
-	(v1.AgentVisibility)(0),                  // 24: shared.v1.AgentVisibility
-	(*v1.AgentCommandList)(nil),              // 25: shared.v1.AgentCommandList
-	(v1.AgentDeliveryMode)(0),                // 26: shared.v1.AgentDeliveryMode
+	(*UpdateAgentSelfConfigRequest)(nil),     // 22: api.v1.UpdateAgentSelfConfigRequest
+	(*UpdateAgentSelfConfigResponse)(nil),    // 23: api.v1.UpdateAgentSelfConfigResponse
+	(*v1.AgentInfo)(nil),                     // 24: shared.v1.AgentInfo
+	(*v1.AgentProfile)(nil),                  // 25: shared.v1.AgentProfile
+	(v1.AgentVisibility)(0),                  // 26: shared.v1.AgentVisibility
+	(*v1.AgentCommandList)(nil),              // 27: shared.v1.AgentCommandList
+	(v1.AgentDeliveryMode)(0),                // 28: shared.v1.AgentDeliveryMode
 }
 var file_api_v1_agent_service_proto_depIdxs = []int32{
-	22, // 0: api.v1.ListFeaturedAgentsResponse.agents:type_name -> shared.v1.AgentInfo
-	22, // 1: api.v1.GetAgentInfoResponse.agent:type_name -> shared.v1.AgentInfo
-	23, // 2: api.v1.CreateAgentResponse.profile:type_name -> shared.v1.AgentProfile
-	23, // 3: api.v1.ListMyAgentsResponse.agents:type_name -> shared.v1.AgentProfile
-	23, // 4: api.v1.GetMyAgentResponse.profile:type_name -> shared.v1.AgentProfile
-	24, // 5: api.v1.SetAgentConfigRequest.visibility:type_name -> shared.v1.AgentVisibility
-	25, // 6: api.v1.SetAgentConfigRequest.commands:type_name -> shared.v1.AgentCommandList
-	26, // 7: api.v1.SetAgentConfigRequest.delivery_mode:type_name -> shared.v1.AgentDeliveryMode
-	0,  // 8: api.v1.AgentService.ListFeaturedAgents:input_type -> api.v1.ListFeaturedAgentsRequest
-	2,  // 9: api.v1.AgentService.GetAgentInfo:input_type -> api.v1.GetAgentInfoRequest
-	4,  // 10: api.v1.AgentService.GetMiniAppLaunchData:input_type -> api.v1.GetMiniAppLaunchDataRequest
-	6,  // 11: api.v1.AgentService.CreateAgent:input_type -> api.v1.CreateAgentRequest
-	8,  // 12: api.v1.AgentService.ListMyAgents:input_type -> api.v1.ListMyAgentsRequest
-	10, // 13: api.v1.AgentService.GetMyAgent:input_type -> api.v1.GetMyAgentRequest
-	12, // 14: api.v1.AgentService.SetAgentConfig:input_type -> api.v1.SetAgentConfigRequest
-	14, // 15: api.v1.AgentService.DeleteMyAgent:input_type -> api.v1.DeleteMyAgentRequest
-	16, // 16: api.v1.AgentService.RegenerateAgentToken:input_type -> api.v1.RegenerateAgentTokenRequest
-	18, // 17: api.v1.AgentService.RegenerateAgentSecretKey:input_type -> api.v1.RegenerateAgentSecretKeyRequest
-	20, // 18: api.v1.AgentService.SetAgentMiniApp:input_type -> api.v1.SetAgentMiniAppRequest
-	1,  // 19: api.v1.AgentService.ListFeaturedAgents:output_type -> api.v1.ListFeaturedAgentsResponse
-	3,  // 20: api.v1.AgentService.GetAgentInfo:output_type -> api.v1.GetAgentInfoResponse
-	5,  // 21: api.v1.AgentService.GetMiniAppLaunchData:output_type -> api.v1.GetMiniAppLaunchDataResponse
-	7,  // 22: api.v1.AgentService.CreateAgent:output_type -> api.v1.CreateAgentResponse
-	9,  // 23: api.v1.AgentService.ListMyAgents:output_type -> api.v1.ListMyAgentsResponse
-	11, // 24: api.v1.AgentService.GetMyAgent:output_type -> api.v1.GetMyAgentResponse
-	13, // 25: api.v1.AgentService.SetAgentConfig:output_type -> api.v1.SetAgentConfigResponse
-	15, // 26: api.v1.AgentService.DeleteMyAgent:output_type -> api.v1.DeleteMyAgentResponse
-	17, // 27: api.v1.AgentService.RegenerateAgentToken:output_type -> api.v1.RegenerateAgentTokenResponse
-	19, // 28: api.v1.AgentService.RegenerateAgentSecretKey:output_type -> api.v1.RegenerateAgentSecretKeyResponse
-	21, // 29: api.v1.AgentService.SetAgentMiniApp:output_type -> api.v1.SetAgentMiniAppResponse
-	19, // [19:30] is the sub-list for method output_type
-	8,  // [8:19] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	24, // 0: api.v1.ListFeaturedAgentsResponse.agents:type_name -> shared.v1.AgentInfo
+	24, // 1: api.v1.GetAgentInfoResponse.agent:type_name -> shared.v1.AgentInfo
+	25, // 2: api.v1.CreateAgentResponse.profile:type_name -> shared.v1.AgentProfile
+	25, // 3: api.v1.ListMyAgentsResponse.agents:type_name -> shared.v1.AgentProfile
+	25, // 4: api.v1.GetMyAgentResponse.profile:type_name -> shared.v1.AgentProfile
+	26, // 5: api.v1.SetAgentConfigRequest.visibility:type_name -> shared.v1.AgentVisibility
+	27, // 6: api.v1.SetAgentConfigRequest.commands:type_name -> shared.v1.AgentCommandList
+	28, // 7: api.v1.SetAgentConfigRequest.delivery_mode:type_name -> shared.v1.AgentDeliveryMode
+	27, // 8: api.v1.UpdateAgentSelfConfigRequest.commands:type_name -> shared.v1.AgentCommandList
+	28, // 9: api.v1.UpdateAgentSelfConfigRequest.delivery_mode:type_name -> shared.v1.AgentDeliveryMode
+	0,  // 10: api.v1.AgentService.ListFeaturedAgents:input_type -> api.v1.ListFeaturedAgentsRequest
+	2,  // 11: api.v1.AgentService.GetAgentInfo:input_type -> api.v1.GetAgentInfoRequest
+	4,  // 12: api.v1.AgentService.GetMiniAppLaunchData:input_type -> api.v1.GetMiniAppLaunchDataRequest
+	6,  // 13: api.v1.AgentService.CreateAgent:input_type -> api.v1.CreateAgentRequest
+	8,  // 14: api.v1.AgentService.ListMyAgents:input_type -> api.v1.ListMyAgentsRequest
+	10, // 15: api.v1.AgentService.GetMyAgent:input_type -> api.v1.GetMyAgentRequest
+	12, // 16: api.v1.AgentService.SetAgentConfig:input_type -> api.v1.SetAgentConfigRequest
+	14, // 17: api.v1.AgentService.DeleteMyAgent:input_type -> api.v1.DeleteMyAgentRequest
+	16, // 18: api.v1.AgentService.RegenerateAgentToken:input_type -> api.v1.RegenerateAgentTokenRequest
+	18, // 19: api.v1.AgentService.RegenerateAgentSecretKey:input_type -> api.v1.RegenerateAgentSecretKeyRequest
+	20, // 20: api.v1.AgentService.SetAgentMiniApp:input_type -> api.v1.SetAgentMiniAppRequest
+	22, // 21: api.v1.AgentService.UpdateAgentSelfConfig:input_type -> api.v1.UpdateAgentSelfConfigRequest
+	1,  // 22: api.v1.AgentService.ListFeaturedAgents:output_type -> api.v1.ListFeaturedAgentsResponse
+	3,  // 23: api.v1.AgentService.GetAgentInfo:output_type -> api.v1.GetAgentInfoResponse
+	5,  // 24: api.v1.AgentService.GetMiniAppLaunchData:output_type -> api.v1.GetMiniAppLaunchDataResponse
+	7,  // 25: api.v1.AgentService.CreateAgent:output_type -> api.v1.CreateAgentResponse
+	9,  // 26: api.v1.AgentService.ListMyAgents:output_type -> api.v1.ListMyAgentsResponse
+	11, // 27: api.v1.AgentService.GetMyAgent:output_type -> api.v1.GetMyAgentResponse
+	13, // 28: api.v1.AgentService.SetAgentConfig:output_type -> api.v1.SetAgentConfigResponse
+	15, // 29: api.v1.AgentService.DeleteMyAgent:output_type -> api.v1.DeleteMyAgentResponse
+	17, // 30: api.v1.AgentService.RegenerateAgentToken:output_type -> api.v1.RegenerateAgentTokenResponse
+	19, // 31: api.v1.AgentService.RegenerateAgentSecretKey:output_type -> api.v1.RegenerateAgentSecretKeyResponse
+	21, // 32: api.v1.AgentService.SetAgentMiniApp:output_type -> api.v1.SetAgentMiniAppResponse
+	23, // 33: api.v1.AgentService.UpdateAgentSelfConfig:output_type -> api.v1.UpdateAgentSelfConfigResponse
+	22, // [22:34] is the sub-list for method output_type
+	10, // [10:22] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_agent_service_proto_init() }
@@ -1329,13 +1448,14 @@ func file_api_v1_agent_service_proto_init() {
 		return
 	}
 	file_api_v1_agent_service_proto_msgTypes[12].OneofWrappers = []any{}
+	file_api_v1_agent_service_proto_msgTypes[22].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1_agent_service_proto_rawDesc), len(file_api_v1_agent_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

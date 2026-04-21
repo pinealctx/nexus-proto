@@ -27,6 +27,9 @@ option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
 //   - Developers regenerate agent secret key via RegenerateAgentSecretKey.
 //   - Developers configure Mini App via SetAgentMiniApp.
 //
+// Agent self-management:
+//   - Agents update their own config via UpdateAgentSelfConfig.
+//
 // Relationship to other services:
 //   - Adding an agent creates a conversation (type = AGENT) visible
 //     in ConversationService.ListConversations.
@@ -138,6 +141,20 @@ service AgentService {
   //   - INVALID_ARGUMENT: URL is not a valid HTTPS URL.
   rpc SetAgentMiniApp(SetAgentMiniAppRequest) returns (SetAgentMiniAppResponse) {
     option (shared.v1.user_only) = true;
+  }
+
+  // ── Agent self-management ──
+
+  // UpdateAgentSelfConfig allows an authenticated agent to update its own
+  // configuration. The agent is identified by the caller's Bearer token;
+  // no agent_user_id field is required. Only agents may call this RPC.
+  //
+  // Error conditions:
+  //   - PERMISSION_DENIED: Caller is not an agent.
+  //   - FAILED_PRECONDITION: Agent is not active.
+  //   - INVALID_ARGUMENT: Invalid field values or webhook URL.
+  rpc UpdateAgentSelfConfig(UpdateAgentSelfConfigRequest) returns (UpdateAgentSelfConfigResponse) {
+    option (shared.v1.agent_only) = true;
   }
 }
 
@@ -311,3 +328,20 @@ message SetAgentMiniAppRequest {
 
 // SetAgentMiniAppResponse is returned after Mini App config is set.
 message SetAgentMiniAppResponse {}
+
+// ── Agent self-management messages ──
+
+// UpdateAgentSelfConfigRequest updates agent-owned configuration fields.
+// The agent identity is derived from the auth token — no agent_user_id needed.
+message UpdateAgentSelfConfigRequest {
+  // Slash commands (replaces existing, max 100). When set, replaces all
+  // commands; omit to leave commands unchanged.
+  optional shared.v1.AgentCommandList commands = 1;
+  // Event delivery mode.
+  optional shared.v1.AgentDeliveryMode delivery_mode = 2;
+  // Webhook URL (required when delivery_mode is WEBHOOK, must be HTTPS).
+  optional string webhook_url = 3 [(buf.validate.field).string.max_len = 2048];
+}
+
+// UpdateAgentSelfConfigResponse is returned after agent self-config is updated.
+message UpdateAgentSelfConfigResponse {}

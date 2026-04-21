@@ -65,6 +65,9 @@ const (
 	// AgentServiceSetAgentMiniAppProcedure is the fully-qualified name of the AgentService's
 	// SetAgentMiniApp RPC.
 	AgentServiceSetAgentMiniAppProcedure = "/api.v1.AgentService/SetAgentMiniApp"
+	// AgentServiceUpdateAgentSelfConfigProcedure is the fully-qualified name of the AgentService's
+	// UpdateAgentSelfConfig RPC.
+	AgentServiceUpdateAgentSelfConfigProcedure = "/api.v1.AgentService/UpdateAgentSelfConfig"
 )
 
 // AgentServiceClient is a client for the api.v1.AgentService service.
@@ -142,6 +145,15 @@ type AgentServiceClient interface {
 	//   - PERMISSION_DENIED: Caller is not the agent creator.
 	//   - INVALID_ARGUMENT: URL is not a valid HTTPS URL.
 	SetAgentMiniApp(context.Context, *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error)
+	// UpdateAgentSelfConfig allows an authenticated agent to update its own
+	// configuration. The agent is identified by the caller's Bearer token;
+	// no agent_user_id field is required. Only agents may call this RPC.
+	//
+	// Error conditions:
+	//   - PERMISSION_DENIED: Caller is not an agent.
+	//   - FAILED_PRECONDITION: Agent is not active.
+	//   - INVALID_ARGUMENT: Invalid field values or webhook URL.
+	UpdateAgentSelfConfig(context.Context, *connect.Request[v1.UpdateAgentSelfConfigRequest]) (*connect.Response[v1.UpdateAgentSelfConfigResponse], error)
 }
 
 // NewAgentServiceClient constructs a client for the api.v1.AgentService service. By default, it
@@ -221,6 +233,12 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(agentServiceMethods.ByName("SetAgentMiniApp")),
 			connect.WithClientOptions(opts...),
 		),
+		updateAgentSelfConfig: connect.NewClient[v1.UpdateAgentSelfConfigRequest, v1.UpdateAgentSelfConfigResponse](
+			httpClient,
+			baseURL+AgentServiceUpdateAgentSelfConfigProcedure,
+			connect.WithSchema(agentServiceMethods.ByName("UpdateAgentSelfConfig")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -237,6 +255,7 @@ type agentServiceClient struct {
 	regenerateAgentToken     *connect.Client[v1.RegenerateAgentTokenRequest, v1.RegenerateAgentTokenResponse]
 	regenerateAgentSecretKey *connect.Client[v1.RegenerateAgentSecretKeyRequest, v1.RegenerateAgentSecretKeyResponse]
 	setAgentMiniApp          *connect.Client[v1.SetAgentMiniAppRequest, v1.SetAgentMiniAppResponse]
+	updateAgentSelfConfig    *connect.Client[v1.UpdateAgentSelfConfigRequest, v1.UpdateAgentSelfConfigResponse]
 }
 
 // ListFeaturedAgents calls api.v1.AgentService.ListFeaturedAgents.
@@ -292,6 +311,11 @@ func (c *agentServiceClient) RegenerateAgentSecretKey(ctx context.Context, req *
 // SetAgentMiniApp calls api.v1.AgentService.SetAgentMiniApp.
 func (c *agentServiceClient) SetAgentMiniApp(ctx context.Context, req *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error) {
 	return c.setAgentMiniApp.CallUnary(ctx, req)
+}
+
+// UpdateAgentSelfConfig calls api.v1.AgentService.UpdateAgentSelfConfig.
+func (c *agentServiceClient) UpdateAgentSelfConfig(ctx context.Context, req *connect.Request[v1.UpdateAgentSelfConfigRequest]) (*connect.Response[v1.UpdateAgentSelfConfigResponse], error) {
+	return c.updateAgentSelfConfig.CallUnary(ctx, req)
 }
 
 // AgentServiceHandler is an implementation of the api.v1.AgentService service.
@@ -369,6 +393,15 @@ type AgentServiceHandler interface {
 	//   - PERMISSION_DENIED: Caller is not the agent creator.
 	//   - INVALID_ARGUMENT: URL is not a valid HTTPS URL.
 	SetAgentMiniApp(context.Context, *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error)
+	// UpdateAgentSelfConfig allows an authenticated agent to update its own
+	// configuration. The agent is identified by the caller's Bearer token;
+	// no agent_user_id field is required. Only agents may call this RPC.
+	//
+	// Error conditions:
+	//   - PERMISSION_DENIED: Caller is not an agent.
+	//   - FAILED_PRECONDITION: Agent is not active.
+	//   - INVALID_ARGUMENT: Invalid field values or webhook URL.
+	UpdateAgentSelfConfig(context.Context, *connect.Request[v1.UpdateAgentSelfConfigRequest]) (*connect.Response[v1.UpdateAgentSelfConfigResponse], error)
 }
 
 // NewAgentServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -444,6 +477,12 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(agentServiceMethods.ByName("SetAgentMiniApp")),
 		connect.WithHandlerOptions(opts...),
 	)
+	agentServiceUpdateAgentSelfConfigHandler := connect.NewUnaryHandler(
+		AgentServiceUpdateAgentSelfConfigProcedure,
+		svc.UpdateAgentSelfConfig,
+		connect.WithSchema(agentServiceMethods.ByName("UpdateAgentSelfConfig")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/api.v1.AgentService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AgentServiceListFeaturedAgentsProcedure:
@@ -468,6 +507,8 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 			agentServiceRegenerateAgentSecretKeyHandler.ServeHTTP(w, r)
 		case AgentServiceSetAgentMiniAppProcedure:
 			agentServiceSetAgentMiniAppHandler.ServeHTTP(w, r)
+		case AgentServiceUpdateAgentSelfConfigProcedure:
+			agentServiceUpdateAgentSelfConfigHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -519,4 +560,8 @@ func (UnimplementedAgentServiceHandler) RegenerateAgentSecretKey(context.Context
 
 func (UnimplementedAgentServiceHandler) SetAgentMiniApp(context.Context, *connect.Request[v1.SetAgentMiniAppRequest]) (*connect.Response[v1.SetAgentMiniAppResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.SetAgentMiniApp is not implemented"))
+}
+
+func (UnimplementedAgentServiceHandler) UpdateAgentSelfConfig(context.Context, *connect.Request[v1.UpdateAgentSelfConfigRequest]) (*connect.Response[v1.UpdateAgentSelfConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.AgentService.UpdateAgentSelfConfig is not implemented"))
 }
