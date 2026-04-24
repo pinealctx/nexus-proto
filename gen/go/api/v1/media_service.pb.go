@@ -569,15 +569,15 @@ var File_api_v1_media_service_proto protoreflect.FileDescriptor
 
 const file_api_v1_media_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapi/v1/media_service.proto\x12\x06api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x15shared/v1/media.proto\"\xcc\x01\n" +
+	"\x1aapi/v1/media_service.proto\x12\x06api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x15shared/v1/media.proto\x1a\x17shared/v1/options.proto\"\xd0\x01\n" +
 	"\x11UploadFileRequest\x12'\n" +
 	"\tfile_name\x18\x01 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\xff\x01R\bfileName\x12-\n" +
 	"\fcontent_type\x18\x02 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\xff\x01R\vcontentType\x12=\n" +
 	"\apurpose\x18\x03 \x01(\x0e2\x17.shared.v1.MediaPurposeB\n" +
-	"\xbaH\a\x82\x01\x04\x10\x01 \x00R\apurpose\x12 \n" +
-	"\x04data\x18\x04 \x01(\fB\f\xbaH\tz\a\x10\x01\x18\x80\x80\xc0\x02R\x04data\"B\n" +
+	"\xbaH\a\x82\x01\x04\x10\x01 \x00R\apurpose\x12$\n" +
+	"\x04data\x18\x04 \x01(\fB\x10\xbaH\tz\a\x10\x01\x18\x80\x80\xc0\x02\x90\xb5\x18\x01R\x04data\"B\n" +
 	"\x12UploadFileResponse\x12,\n" +
 	"\x04file\x18\x01 \x01(\v2\x18.shared.v1.MediaFileInfoR\x04file\"\x8d\x01\n" +
 	"\x11InitUploadRequest\x12'\n" +
@@ -591,11 +591,11 @@ const file_api_v1_media_service_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1a\n" +
 	"\buploaded\x18\x02 \x01(\x03R\buploaded\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x03 \x01(\x03R\tcreatedAt\"|\n" +
+	"created_at\x18\x03 \x01(\x03R\tcreatedAt\"\x80\x01\n" +
 	"\x12UploadChunkRequest\x12&\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tsessionId\x12\x1d\n" +
-	"\x05chunk\x18\x02 \x01(\fB\a\xbaH\x04z\x02\x10\x01R\x05chunk\x12\x1f\n" +
+	"session_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tsessionId\x12!\n" +
+	"\x05chunk\x18\x02 \x01(\fB\v\xbaH\x04z\x02\x10\x01\x90\xb5\x18\x01R\x05chunk\x12\x1f\n" +
 	"\x06offset\x18\x03 \x01(\x03B\a\xbaH\x04\"\x02(\x00R\x06offset\"\x15\n" +
 	"\x13UploadChunkResponse\"?\n" +
 	"\x15CompleteUploadRequest\x12&\n" +
