@@ -207,6 +207,8 @@ message SendMessageResponse {
   int64 message_id = 1;
   // Message creation time (Unix ms).
   int64 created_at = 2;
+  // Client message ID (echoed back from the request).
+  int64 client_message_id = 3;
 }
 
 // ── Edit ──
