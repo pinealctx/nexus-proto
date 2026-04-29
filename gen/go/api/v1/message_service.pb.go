@@ -102,11 +102,9 @@ type SendMessageResponse struct {
 	// Server-assigned message ID.
 	MessageId int64 `protobuf:"varint,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	// Message creation time (Unix ms).
-	CreatedAt int64 `protobuf:"varint,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	// Client message ID (echoed back from the request).
-	ClientMessageId int64 `protobuf:"varint,3,opt,name=client_message_id,json=clientMessageId,proto3" json:"client_message_id,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	CreatedAt     int64 `protobuf:"varint,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SendMessageResponse) Reset() {
@@ -149,13 +147,6 @@ func (x *SendMessageResponse) GetMessageId() int64 {
 func (x *SendMessageResponse) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
-	}
-	return 0
-}
-
-func (x *SendMessageResponse) GetClientMessageId() int64 {
-	if x != nil {
-		return x.ClientMessageId
 	}
 	return 0
 }
@@ -1375,13 +1366,12 @@ const file_api_v1_message_service_proto_rawDesc = "" +
 	"\x0fconversation_id\x18\x02 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\x0econversationId\x122\n" +
 	"\x04body\x18\x03 \x01(\v2\x16.shared.v1.MessageBodyB\x06\xbaH\x03\xc8\x01\x01R\x04body\x122\n" +
 	"\x13reply_to_message_id\x18\x04 \x01(\x03H\x00R\x10replyToMessageId\x88\x01\x01B\x16\n" +
-	"\x14_reply_to_message_id\"\x7f\n" +
+	"\x14_reply_to_message_id\"l\n" +
 	"\x13SendMessageResponse\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\x03R\tmessageId\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x02 \x01(\x03R\tcreatedAt\x12*\n" +
-	"\x11client_message_id\x18\x03 \x01(\x03R\x0fclientMessageId\"\xa9\x01\n" +
+	"created_at\x18\x02 \x01(\x03R\tcreatedAtJ\x04\b\x03\x10\x04R\x11client_message_id\"\xa9\x01\n" +
 	"\x12EditMessageRequest\x120\n" +
 	"\x0fconversation_id\x18\x01 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\x0econversationId\x12&\n" +
 	"\n" +

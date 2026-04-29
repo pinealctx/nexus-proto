@@ -358,6 +358,11 @@ message MessageEnvelope {
   optional int64 updated_at = 8;
   // Whether the message has been edited. Not set for recalls.
   bool edited = 9;
+
+  // Client-generated message ID for idempotency and dedup.
+  // Echoed from SendMessageRequest.client_message_id.
+  // Zero for system-generated messages (greetings, group events).
+  int64 client_message_id = 10;
 }
 
 // RecalledContent replaces the original message body when a message is

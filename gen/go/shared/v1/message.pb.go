@@ -1590,9 +1590,13 @@ type MessageEnvelope struct {
 	// Last content modification time (Unix ms). Set on edit or recall.
 	UpdatedAt *int64 `protobuf:"varint,8,opt,name=updated_at,json=updatedAt,proto3,oneof" json:"updated_at,omitempty"`
 	// Whether the message has been edited. Not set for recalls.
-	Edited        bool `protobuf:"varint,9,opt,name=edited,proto3" json:"edited,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Edited bool `protobuf:"varint,9,opt,name=edited,proto3" json:"edited,omitempty"`
+	// Client-generated message ID for idempotency and dedup.
+	// Echoed from SendMessageRequest.client_message_id.
+	// Zero for system-generated messages (greetings, group events).
+	ClientMessageId int64 `protobuf:"varint,10,opt,name=client_message_id,json=clientMessageId,proto3" json:"client_message_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *MessageEnvelope) Reset() {
@@ -1686,6 +1690,13 @@ func (x *MessageEnvelope) GetEdited() bool {
 		return x.Edited
 	}
 	return false
+}
+
+func (x *MessageEnvelope) GetClientMessageId() int64 {
+	if x != nil {
+		return x.ClientMessageId
+	}
+	return 0
 }
 
 // RecalledContent replaces the original message body when a message is
@@ -1829,7 +1840,7 @@ const file_shared_v1_message_proto_rawDesc = "" +
 	"message_id\x18\x01 \x01(\x03R\tmessageId\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\x05R\bsenderId\x12'\n" +
 	"\x0fsender_nickname\x18\x03 \x01(\tR\x0esenderNickname\x12'\n" +
-	"\x0fcontent_preview\x18\x04 \x01(\tR\x0econtentPreview\"\xd5\x03\n" +
+	"\x0fcontent_preview\x18\x04 \x01(\tR\x0econtentPreview\"\x81\x04\n" +
 	"\x0fMessageEnvelope\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\x03R\tmessageId\x12'\n" +
@@ -1842,7 +1853,9 @@ const file_shared_v1_message_proto_rawDesc = "" +
 	"created_at\x18\a \x01(\x03R\tcreatedAt\x12\"\n" +
 	"\n" +
 	"updated_at\x18\b \x01(\x03H\x01R\tupdatedAt\x88\x01\x01\x12\x16\n" +
-	"\x06edited\x18\t \x01(\bR\x06edited\x1a;\n" +
+	"\x06edited\x18\t \x01(\bR\x06edited\x12*\n" +
+	"\x11client_message_id\x18\n" +
+	" \x01(\x03R\x0fclientMessageId\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
