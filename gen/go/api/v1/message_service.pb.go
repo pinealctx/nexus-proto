@@ -1366,12 +1366,12 @@ const file_api_v1_message_service_proto_rawDesc = "" +
 	"\x0fconversation_id\x18\x02 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\x0econversationId\x122\n" +
 	"\x04body\x18\x03 \x01(\v2\x16.shared.v1.MessageBodyB\x06\xbaH\x03\xc8\x01\x01R\x04body\x122\n" +
 	"\x13reply_to_message_id\x18\x04 \x01(\x03H\x00R\x10replyToMessageId\x88\x01\x01B\x16\n" +
-	"\x14_reply_to_message_id\"l\n" +
+	"\x14_reply_to_message_id\"S\n" +
 	"\x13SendMessageResponse\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\x03R\tmessageId\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x02 \x01(\x03R\tcreatedAtJ\x04\b\x03\x10\x04R\x11client_message_id\"\xa9\x01\n" +
+	"created_at\x18\x02 \x01(\x03R\tcreatedAt\"\xa9\x01\n" +
 	"\x12EditMessageRequest\x120\n" +
 	"\x0fconversation_id\x18\x01 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\x0econversationId\x12&\n" +
 	"\n" +

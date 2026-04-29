@@ -180,8 +180,12 @@ type ListConversationsResponse struct {
 	RelatedUsers []*v1.UserInfo `protobuf:"bytes,2,rep,name=related_users,json=relatedUsers,proto3" json:"related_users,omitempty"`
 	// Related group info referenced by GROUP-type conversations.
 	RelatedGroups []*v1.GroupInfo `protobuf:"bytes,3,rep,name=related_groups,json=relatedGroups,proto3" json:"related_groups,omitempty"`
+	// Latest message for each conversation. One entry per conversation that
+	// has at least one message (keyed by conversation_id in the envelope).
+	// Clients use this to render the last message preview in the conversation list.
+	Messages []*v1.MessageEnvelope `protobuf:"bytes,4,rep,name=messages,proto3" json:"messages,omitempty"`
 	// Whether there are more conversations beyond this page.
-	HasMore       bool `protobuf:"varint,4,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
+	HasMore       bool `protobuf:"varint,5,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -233,6 +237,13 @@ func (x *ListConversationsResponse) GetRelatedUsers() []*v1.UserInfo {
 func (x *ListConversationsResponse) GetRelatedGroups() []*v1.GroupInfo {
 	if x != nil {
 		return x.RelatedGroups
+	}
+	return nil
+}
+
+func (x *ListConversationsResponse) GetMessages() []*v1.MessageEnvelope {
+	if x != nil {
+		return x.Messages
 	}
 	return nil
 }
@@ -443,7 +454,7 @@ var File_api_v1_conversation_service_proto protoreflect.FileDescriptor
 
 const file_api_v1_conversation_service_proto_rawDesc = "" +
 	"\n" +
-	"!api/v1/conversation_service.proto\x12\x06api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cshared/v1/conversation.proto\x1a\x15shared/v1/group.proto\x1a\x14shared/v1/user.proto\"J\n" +
+	"!api/v1/conversation_service.proto\x12\x06api.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cshared/v1/conversation.proto\x1a\x15shared/v1/group.proto\x1a\x17shared/v1/message.proto\x1a\x14shared/v1/user.proto\"J\n" +
 	"\x16GetConversationRequest\x120\n" +
 	"\x0fconversation_id\x18\x01 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\x0econversationId\"Z\n" +
 	"\x17GetConversationResponse\x12?\n" +
@@ -452,12 +463,13 @@ const file_api_v1_conversation_service_proto_rawDesc = "" +
 	"\vbefore_time\x18\x01 \x01(\x03H\x00R\n" +
 	"beforeTime\x88\x01\x01\x12\x1f\n" +
 	"\x05limit\x18\x02 \x01(\x05B\t\xbaH\x06\x1a\x04\x18d(\x00R\x05limitB\x0e\n" +
-	"\f_before_time\"\xf0\x01\n" +
+	"\f_before_time\"\xa8\x02\n" +
 	"\x19ListConversationsResponse\x12A\n" +
 	"\rconversations\x18\x01 \x03(\v2\x1b.shared.v1.ConversationInfoR\rconversations\x128\n" +
 	"\rrelated_users\x18\x02 \x03(\v2\x13.shared.v1.UserInfoR\frelatedUsers\x12;\n" +
-	"\x0erelated_groups\x18\x03 \x03(\v2\x14.shared.v1.GroupInfoR\rrelatedGroups\x12\x19\n" +
-	"\bhas_more\x18\x04 \x01(\bR\ahasMore\"\xc1\x01\n" +
+	"\x0erelated_groups\x18\x03 \x03(\v2\x14.shared.v1.GroupInfoR\rrelatedGroups\x126\n" +
+	"\bmessages\x18\x04 \x03(\v2\x1a.shared.v1.MessageEnvelopeR\bmessages\x12\x19\n" +
+	"\bhas_more\x18\x05 \x01(\bR\ahasMore\"\xc1\x01\n" +
 	"\x1fUpdateConversationActionRequest\x120\n" +
 	"\x0fconversation_id\x18\x01 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\x0econversationId\x12E\n" +
 	"\x06action\x18\x02 \x01(\x0e2!.shared.v1.ConversationActionTypeB\n" +
@@ -502,27 +514,29 @@ var file_api_v1_conversation_service_proto_goTypes = []any{
 	(*v1.ConversationInfo)(nil),              // 8: shared.v1.ConversationInfo
 	(*v1.UserInfo)(nil),                      // 9: shared.v1.UserInfo
 	(*v1.GroupInfo)(nil),                     // 10: shared.v1.GroupInfo
-	(v1.ConversationActionType)(0),           // 11: shared.v1.ConversationActionType
+	(*v1.MessageEnvelope)(nil),               // 11: shared.v1.MessageEnvelope
+	(v1.ConversationActionType)(0),           // 12: shared.v1.ConversationActionType
 }
 var file_api_v1_conversation_service_proto_depIdxs = []int32{
 	8,  // 0: api.v1.GetConversationResponse.conversation:type_name -> shared.v1.ConversationInfo
 	8,  // 1: api.v1.ListConversationsResponse.conversations:type_name -> shared.v1.ConversationInfo
 	9,  // 2: api.v1.ListConversationsResponse.related_users:type_name -> shared.v1.UserInfo
 	10, // 3: api.v1.ListConversationsResponse.related_groups:type_name -> shared.v1.GroupInfo
-	11, // 4: api.v1.UpdateConversationActionRequest.action:type_name -> shared.v1.ConversationActionType
-	0,  // 5: api.v1.ConversationService.GetConversation:input_type -> api.v1.GetConversationRequest
-	2,  // 6: api.v1.ConversationService.ListConversations:input_type -> api.v1.ListConversationsRequest
-	4,  // 7: api.v1.ConversationService.UpdateConversationAction:input_type -> api.v1.UpdateConversationActionRequest
-	6,  // 8: api.v1.ConversationService.MarkAsRead:input_type -> api.v1.MarkAsReadRequest
-	1,  // 9: api.v1.ConversationService.GetConversation:output_type -> api.v1.GetConversationResponse
-	3,  // 10: api.v1.ConversationService.ListConversations:output_type -> api.v1.ListConversationsResponse
-	5,  // 11: api.v1.ConversationService.UpdateConversationAction:output_type -> api.v1.UpdateConversationActionResponse
-	7,  // 12: api.v1.ConversationService.MarkAsRead:output_type -> api.v1.MarkAsReadResponse
-	9,  // [9:13] is the sub-list for method output_type
-	5,  // [5:9] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	11, // 4: api.v1.ListConversationsResponse.messages:type_name -> shared.v1.MessageEnvelope
+	12, // 5: api.v1.UpdateConversationActionRequest.action:type_name -> shared.v1.ConversationActionType
+	0,  // 6: api.v1.ConversationService.GetConversation:input_type -> api.v1.GetConversationRequest
+	2,  // 7: api.v1.ConversationService.ListConversations:input_type -> api.v1.ListConversationsRequest
+	4,  // 8: api.v1.ConversationService.UpdateConversationAction:input_type -> api.v1.UpdateConversationActionRequest
+	6,  // 9: api.v1.ConversationService.MarkAsRead:input_type -> api.v1.MarkAsReadRequest
+	1,  // 10: api.v1.ConversationService.GetConversation:output_type -> api.v1.GetConversationResponse
+	3,  // 11: api.v1.ConversationService.ListConversations:output_type -> api.v1.ListConversationsResponse
+	5,  // 12: api.v1.ConversationService.UpdateConversationAction:output_type -> api.v1.UpdateConversationActionResponse
+	7,  // 13: api.v1.ConversationService.MarkAsRead:output_type -> api.v1.MarkAsReadResponse
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_api_v1_conversation_service_proto_init() }

@@ -4,6 +4,7 @@ package api.v1;
 import "buf/validate/validate.proto";
 import "shared/v1/conversation.proto";
 import "shared/v1/group.proto";
+import "shared/v1/message.proto";
 import "shared/v1/user.proto";
 
 option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
@@ -123,8 +124,12 @@ message ListConversationsResponse {
   repeated shared.v1.UserInfo related_users = 2;
   // Related group info referenced by GROUP-type conversations.
   repeated shared.v1.GroupInfo related_groups = 3;
+  // Latest message for each conversation. One entry per conversation that
+  // has at least one message (keyed by conversation_id in the envelope).
+  // Clients use this to render the last message preview in the conversation list.
+  repeated shared.v1.MessageEnvelope messages = 4;
   // Whether there are more conversations beyond this page.
-  bool has_more = 4;
+  bool has_more = 5;
 }
 
 // UpdateConversationActionRequest performs a conversation action.
