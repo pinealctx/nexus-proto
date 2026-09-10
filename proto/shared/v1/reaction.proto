@@ -1,0 +1,60 @@
+syntax = "proto3";
+package shared.v1;
+
+option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
+
+// ReactionCount is an aggregate for one allowed Unicode emoji sequence.
+message ReactionCount {
+  // Canonical emoji from the server-provided catalog.
+  string emoji = 1;
+  // Number of distinct users selecting this emoji.
+  int32 count = 2;
+}
+
+// MessageReactions is a recipient-independent, versioned snapshot.
+message MessageReactions {
+  // Conversation containing the message.
+  int64 conversation_id = 1;
+  // Message ID within the conversation.
+  int64 message_id = 2;
+  // Monotonic revision, including removals and clearing on recall.
+  int64 revision = 3;
+  // Nonzero counts sorted by canonical emoji.
+  repeated ReactionCount counts = 4;
+}
+
+// MessageReactionView is a personalized RPC snapshot, never broadcast verbatim.
+message MessageReactionView {
+  // Shared aggregate snapshot.
+  MessageReactions state = 1;
+  // Emojis selected by the authenticated caller at this revision.
+  repeated string selected_emojis = 2;
+}
+
+// MessageReactionsChangedEvent changes only reaction state, not message activity.
+message MessageReactionsChangedEvent {
+  // Authoritative aggregate after the operation.
+  MessageReactions state = 1;
+  // User performing the operation; zero when the message was recalled.
+  int32 actor_id = 2;
+  // Emoji changed; empty when all reactions were cleared.
+  string emoji = 3;
+  // Whether the actor now selects the emoji.
+  bool present = 4;
+  // Event creation time in Unix milliseconds.
+  int64 created_at = 5;
+  // Original message sender, for optional targeted notifications.
+  int32 message_sender_id = 6;
+  // Complete actor selection at this revision, allowing out-of-order delivery.
+  repeated string actor_selected_emojis = 7;
+}
+
+// ReactionConfig controls both clients and server-side validation.
+message ReactionConfig {
+  // Whether reaction writes are enabled.
+  bool enabled = 1;
+  // Ordered list of permitted Unicode emoji sequences.
+  repeated string emojis = 2;
+  // Maximum distinct emojis one user may select on one message.
+  int32 max_per_user = 3;
+}

@@ -1596,8 +1596,10 @@ type MessageEnvelope struct {
 	// Echoed from SendMessageRequest.client_message_id.
 	// Zero for system-generated messages (greetings, group events).
 	ClientMessageId int64 `protobuf:"varint,10,opt,name=client_message_id,json=clientMessageId,proto3" json:"client_message_id,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Personalized reactions, populated on authenticated message queries.
+	Reactions     *MessageReactionView `protobuf:"bytes,11,opt,name=reactions,proto3" json:"reactions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MessageEnvelope) Reset() {
@@ -1700,6 +1702,13 @@ func (x *MessageEnvelope) GetClientMessageId() int64 {
 	return 0
 }
 
+func (x *MessageEnvelope) GetReactions() *MessageReactionView {
+	if x != nil {
+		return x.Reactions
+	}
+	return nil
+}
+
 // RecalledContent replaces the original message body when a message is
 // recalled by its sender. The envelope's message_id and sender_id remain
 // unchanged. Clients resolve the sender nickname from their local user
@@ -1744,7 +1753,7 @@ var File_shared_v1_message_proto protoreflect.FileDescriptor
 
 const file_shared_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x17shared/v1/message.proto\x12\tshared.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1bshared/v1/group_event.proto\"\xbf\x02\n" +
+	"\x17shared/v1/message.proto\x12\tshared.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1bshared/v1/group_event.proto\x1a\x18shared/v1/reaction.proto\"\xbf\x02\n" +
 	"\rMessageEntity\x120\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1c.shared.v1.MessageEntityTypeR\x04type\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\x12\x16\n" +
@@ -1841,7 +1850,7 @@ const file_shared_v1_message_proto_rawDesc = "" +
 	"message_id\x18\x01 \x01(\x03R\tmessageId\x12\x1b\n" +
 	"\tsender_id\x18\x02 \x01(\x05R\bsenderId\x12'\n" +
 	"\x0fsender_nickname\x18\x03 \x01(\tR\x0esenderNickname\x12'\n" +
-	"\x0fcontent_preview\x18\x04 \x01(\tR\x0econtentPreview\"\x81\x04\n" +
+	"\x0fcontent_preview\x18\x04 \x01(\tR\x0econtentPreview\"\xbf\x04\n" +
 	"\x0fMessageEnvelope\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\x03R\tmessageId\x12'\n" +
@@ -1856,7 +1865,8 @@ const file_shared_v1_message_proto_rawDesc = "" +
 	"updated_at\x18\b \x01(\x03H\x01R\tupdatedAt\x88\x01\x01\x12\x16\n" +
 	"\x06edited\x18\t \x01(\bR\x06edited\x12*\n" +
 	"\x11client_message_id\x18\n" +
-	" \x01(\x03R\x0fclientMessageId\x1a;\n" +
+	" \x01(\x03R\x0fclientMessageId\x12<\n" +
+	"\treactions\x18\v \x01(\v2\x1e.shared.v1.MessageReactionViewR\treactions\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
@@ -1910,28 +1920,29 @@ func file_shared_v1_message_proto_rawDescGZIP() []byte {
 var file_shared_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_shared_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_shared_v1_message_proto_goTypes = []any{
-	(MessageType)(0),        // 0: shared.v1.MessageType
-	(MessageEntityType)(0),  // 1: shared.v1.MessageEntityType
-	(StreamPhase)(0),        // 2: shared.v1.StreamPhase
-	(*MessageEntity)(nil),   // 3: shared.v1.MessageEntity
-	(*MentionEntity)(nil),   // 4: shared.v1.MentionEntity
-	(*UrlEntity)(nil),       // 5: shared.v1.UrlEntity
-	(*PhoneEntity)(nil),     // 6: shared.v1.PhoneEntity
-	(*HashtagEntity)(nil),   // 7: shared.v1.HashtagEntity
-	(*MessageBody)(nil),     // 8: shared.v1.MessageBody
-	(*TextContent)(nil),     // 9: shared.v1.TextContent
-	(*ImageContent)(nil),    // 10: shared.v1.ImageContent
-	(*AudioContent)(nil),    // 11: shared.v1.AudioContent
-	(*VideoContent)(nil),    // 12: shared.v1.VideoContent
-	(*FileContent)(nil),     // 13: shared.v1.FileContent
-	(*MarkdownContent)(nil), // 14: shared.v1.MarkdownContent
-	(*CardContent)(nil),     // 15: shared.v1.CardContent
-	(*StreamContent)(nil),   // 16: shared.v1.StreamContent
-	(*ReplyContext)(nil),    // 17: shared.v1.ReplyContext
-	(*MessageEnvelope)(nil), // 18: shared.v1.MessageEnvelope
-	(*RecalledContent)(nil), // 19: shared.v1.RecalledContent
-	nil,                     // 20: shared.v1.MessageEnvelope.MetadataEntry
-	(*GroupContent)(nil),    // 21: shared.v1.GroupContent
+	(MessageType)(0),            // 0: shared.v1.MessageType
+	(MessageEntityType)(0),      // 1: shared.v1.MessageEntityType
+	(StreamPhase)(0),            // 2: shared.v1.StreamPhase
+	(*MessageEntity)(nil),       // 3: shared.v1.MessageEntity
+	(*MentionEntity)(nil),       // 4: shared.v1.MentionEntity
+	(*UrlEntity)(nil),           // 5: shared.v1.UrlEntity
+	(*PhoneEntity)(nil),         // 6: shared.v1.PhoneEntity
+	(*HashtagEntity)(nil),       // 7: shared.v1.HashtagEntity
+	(*MessageBody)(nil),         // 8: shared.v1.MessageBody
+	(*TextContent)(nil),         // 9: shared.v1.TextContent
+	(*ImageContent)(nil),        // 10: shared.v1.ImageContent
+	(*AudioContent)(nil),        // 11: shared.v1.AudioContent
+	(*VideoContent)(nil),        // 12: shared.v1.VideoContent
+	(*FileContent)(nil),         // 13: shared.v1.FileContent
+	(*MarkdownContent)(nil),     // 14: shared.v1.MarkdownContent
+	(*CardContent)(nil),         // 15: shared.v1.CardContent
+	(*StreamContent)(nil),       // 16: shared.v1.StreamContent
+	(*ReplyContext)(nil),        // 17: shared.v1.ReplyContext
+	(*MessageEnvelope)(nil),     // 18: shared.v1.MessageEnvelope
+	(*RecalledContent)(nil),     // 19: shared.v1.RecalledContent
+	nil,                         // 20: shared.v1.MessageEnvelope.MetadataEntry
+	(*GroupContent)(nil),        // 21: shared.v1.GroupContent
+	(*MessageReactionView)(nil), // 22: shared.v1.MessageReactionView
 }
 var file_shared_v1_message_proto_depIdxs = []int32{
 	1,  // 0: shared.v1.MessageEntity.type:type_name -> shared.v1.MessageEntityType
@@ -1957,11 +1968,12 @@ var file_shared_v1_message_proto_depIdxs = []int32{
 	8,  // 20: shared.v1.MessageEnvelope.body:type_name -> shared.v1.MessageBody
 	17, // 21: shared.v1.MessageEnvelope.reply_to:type_name -> shared.v1.ReplyContext
 	20, // 22: shared.v1.MessageEnvelope.metadata:type_name -> shared.v1.MessageEnvelope.MetadataEntry
-	23, // [23:23] is the sub-list for method output_type
-	23, // [23:23] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	22, // 23: shared.v1.MessageEnvelope.reactions:type_name -> shared.v1.MessageReactionView
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_shared_v1_message_proto_init() }
@@ -1970,6 +1982,7 @@ func file_shared_v1_message_proto_init() {
 		return
 	}
 	file_shared_v1_group_event_proto_init()
+	file_shared_v1_reaction_proto_init()
 	file_shared_v1_message_proto_msgTypes[0].OneofWrappers = []any{
 		(*MessageEntity_Mention)(nil),
 		(*MessageEntity_Url)(nil),

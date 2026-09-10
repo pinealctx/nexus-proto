@@ -33,6 +33,15 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// MessageServiceSetMessageReactionProcedure is the fully-qualified name of the MessageService's
+	// SetMessageReaction RPC.
+	MessageServiceSetMessageReactionProcedure = "/api.v1.MessageService/SetMessageReaction"
+	// MessageServiceRemoveMessageReactionProcedure is the fully-qualified name of the MessageService's
+	// RemoveMessageReaction RPC.
+	MessageServiceRemoveMessageReactionProcedure = "/api.v1.MessageService/RemoveMessageReaction"
+	// MessageServiceListMessageReactorsProcedure is the fully-qualified name of the MessageService's
+	// ListMessageReactors RPC.
+	MessageServiceListMessageReactorsProcedure = "/api.v1.MessageService/ListMessageReactors"
 	// MessageServiceSendMessageProcedure is the fully-qualified name of the MessageService's
 	// SendMessage RPC.
 	MessageServiceSendMessageProcedure = "/api.v1.MessageService/SendMessage"
@@ -73,6 +82,15 @@ const (
 
 // MessageServiceClient is a client for the api.v1.MessageService service.
 type MessageServiceClient interface {
+	// SetMessageReaction idempotently adds the caller's emoji and emits SnUpdate.
+	// Fails for inaccessible, recalled or unsupported messages and exceeded limits.
+	SetMessageReaction(context.Context, *connect.Request[v1.SetMessageReactionRequest]) (*connect.Response[v1.SetMessageReactionResponse], error)
+	// RemoveMessageReaction idempotently removes the caller's emoji and emits SnUpdate.
+	// Requires active conversation membership and message visibility.
+	RemoveMessageReaction(context.Context, *connect.Request[v1.RemoveMessageReactionRequest]) (*connect.Response[v1.RemoveMessageReactionResponse], error)
+	// ListMessageReactors pages through users selecting an emoji by ascending user ID.
+	// Requires active conversation membership and message visibility. Does not mutate.
+	ListMessageReactors(context.Context, *connect.Request[v1.ListMessageReactorsRequest]) (*connect.Response[v1.ListMessageReactorsResponse], error)
 	// SendMessage sends a message to a conversation.
 	//
 	// Side effects:
@@ -233,6 +251,24 @@ func NewMessageServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 	baseURL = strings.TrimRight(baseURL, "/")
 	messageServiceMethods := v1.File_api_v1_message_service_proto.Services().ByName("MessageService").Methods()
 	return &messageServiceClient{
+		setMessageReaction: connect.NewClient[v1.SetMessageReactionRequest, v1.SetMessageReactionResponse](
+			httpClient,
+			baseURL+MessageServiceSetMessageReactionProcedure,
+			connect.WithSchema(messageServiceMethods.ByName("SetMessageReaction")),
+			connect.WithClientOptions(opts...),
+		),
+		removeMessageReaction: connect.NewClient[v1.RemoveMessageReactionRequest, v1.RemoveMessageReactionResponse](
+			httpClient,
+			baseURL+MessageServiceRemoveMessageReactionProcedure,
+			connect.WithSchema(messageServiceMethods.ByName("RemoveMessageReaction")),
+			connect.WithClientOptions(opts...),
+		),
+		listMessageReactors: connect.NewClient[v1.ListMessageReactorsRequest, v1.ListMessageReactorsResponse](
+			httpClient,
+			baseURL+MessageServiceListMessageReactorsProcedure,
+			connect.WithSchema(messageServiceMethods.ByName("ListMessageReactors")),
+			connect.WithClientOptions(opts...),
+		),
 		sendMessage: connect.NewClient[v1.SendMessageRequest, v1.SendMessageResponse](
 			httpClient,
 			baseURL+MessageServiceSendMessageProcedure,
@@ -310,18 +346,36 @@ func NewMessageServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // messageServiceClient implements MessageServiceClient.
 type messageServiceClient struct {
-	sendMessage       *connect.Client[v1.SendMessageRequest, v1.SendMessageResponse]
-	editMessage       *connect.Client[v1.EditMessageRequest, v1.EditMessageResponse]
-	deleteMessages    *connect.Client[v1.DeleteMessagesRequest, v1.DeleteMessagesResponse]
-	deleteHistory     *connect.Client[v1.DeleteHistoryRequest, v1.DeleteHistoryResponse]
-	recallMessage     *connect.Client[v1.RecallMessageRequest, v1.RecallMessageResponse]
-	getMessage        *connect.Client[v1.GetMessageRequest, v1.GetMessageResponse]
-	getMessageHistory *connect.Client[v1.GetMessageHistoryRequest, v1.GetMessageHistoryResponse]
-	submitCardAction  *connect.Client[v1.SubmitCardActionRequest, v1.SubmitCardActionResponse]
-	pushStreamDelta   *connect.Client[v1.PushStreamDeltaRequest, v1.PushStreamDeltaResponse]
-	endStream         *connect.Client[v1.EndStreamRequest, v1.EndStreamResponse]
-	errorStream       *connect.Client[v1.ErrorStreamRequest, v1.ErrorStreamResponse]
-	answerCardAction  *connect.Client[v1.AnswerCardActionRequest, v1.AnswerCardActionResponse]
+	setMessageReaction    *connect.Client[v1.SetMessageReactionRequest, v1.SetMessageReactionResponse]
+	removeMessageReaction *connect.Client[v1.RemoveMessageReactionRequest, v1.RemoveMessageReactionResponse]
+	listMessageReactors   *connect.Client[v1.ListMessageReactorsRequest, v1.ListMessageReactorsResponse]
+	sendMessage           *connect.Client[v1.SendMessageRequest, v1.SendMessageResponse]
+	editMessage           *connect.Client[v1.EditMessageRequest, v1.EditMessageResponse]
+	deleteMessages        *connect.Client[v1.DeleteMessagesRequest, v1.DeleteMessagesResponse]
+	deleteHistory         *connect.Client[v1.DeleteHistoryRequest, v1.DeleteHistoryResponse]
+	recallMessage         *connect.Client[v1.RecallMessageRequest, v1.RecallMessageResponse]
+	getMessage            *connect.Client[v1.GetMessageRequest, v1.GetMessageResponse]
+	getMessageHistory     *connect.Client[v1.GetMessageHistoryRequest, v1.GetMessageHistoryResponse]
+	submitCardAction      *connect.Client[v1.SubmitCardActionRequest, v1.SubmitCardActionResponse]
+	pushStreamDelta       *connect.Client[v1.PushStreamDeltaRequest, v1.PushStreamDeltaResponse]
+	endStream             *connect.Client[v1.EndStreamRequest, v1.EndStreamResponse]
+	errorStream           *connect.Client[v1.ErrorStreamRequest, v1.ErrorStreamResponse]
+	answerCardAction      *connect.Client[v1.AnswerCardActionRequest, v1.AnswerCardActionResponse]
+}
+
+// SetMessageReaction calls api.v1.MessageService.SetMessageReaction.
+func (c *messageServiceClient) SetMessageReaction(ctx context.Context, req *connect.Request[v1.SetMessageReactionRequest]) (*connect.Response[v1.SetMessageReactionResponse], error) {
+	return c.setMessageReaction.CallUnary(ctx, req)
+}
+
+// RemoveMessageReaction calls api.v1.MessageService.RemoveMessageReaction.
+func (c *messageServiceClient) RemoveMessageReaction(ctx context.Context, req *connect.Request[v1.RemoveMessageReactionRequest]) (*connect.Response[v1.RemoveMessageReactionResponse], error) {
+	return c.removeMessageReaction.CallUnary(ctx, req)
+}
+
+// ListMessageReactors calls api.v1.MessageService.ListMessageReactors.
+func (c *messageServiceClient) ListMessageReactors(ctx context.Context, req *connect.Request[v1.ListMessageReactorsRequest]) (*connect.Response[v1.ListMessageReactorsResponse], error) {
+	return c.listMessageReactors.CallUnary(ctx, req)
 }
 
 // SendMessage calls api.v1.MessageService.SendMessage.
@@ -386,6 +440,15 @@ func (c *messageServiceClient) AnswerCardAction(ctx context.Context, req *connec
 
 // MessageServiceHandler is an implementation of the api.v1.MessageService service.
 type MessageServiceHandler interface {
+	// SetMessageReaction idempotently adds the caller's emoji and emits SnUpdate.
+	// Fails for inaccessible, recalled or unsupported messages and exceeded limits.
+	SetMessageReaction(context.Context, *connect.Request[v1.SetMessageReactionRequest]) (*connect.Response[v1.SetMessageReactionResponse], error)
+	// RemoveMessageReaction idempotently removes the caller's emoji and emits SnUpdate.
+	// Requires active conversation membership and message visibility.
+	RemoveMessageReaction(context.Context, *connect.Request[v1.RemoveMessageReactionRequest]) (*connect.Response[v1.RemoveMessageReactionResponse], error)
+	// ListMessageReactors pages through users selecting an emoji by ascending user ID.
+	// Requires active conversation membership and message visibility. Does not mutate.
+	ListMessageReactors(context.Context, *connect.Request[v1.ListMessageReactorsRequest]) (*connect.Response[v1.ListMessageReactorsResponse], error)
 	// SendMessage sends a message to a conversation.
 	//
 	// Side effects:
@@ -542,6 +605,24 @@ type MessageServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewMessageServiceHandler(svc MessageServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	messageServiceMethods := v1.File_api_v1_message_service_proto.Services().ByName("MessageService").Methods()
+	messageServiceSetMessageReactionHandler := connect.NewUnaryHandler(
+		MessageServiceSetMessageReactionProcedure,
+		svc.SetMessageReaction,
+		connect.WithSchema(messageServiceMethods.ByName("SetMessageReaction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	messageServiceRemoveMessageReactionHandler := connect.NewUnaryHandler(
+		MessageServiceRemoveMessageReactionProcedure,
+		svc.RemoveMessageReaction,
+		connect.WithSchema(messageServiceMethods.ByName("RemoveMessageReaction")),
+		connect.WithHandlerOptions(opts...),
+	)
+	messageServiceListMessageReactorsHandler := connect.NewUnaryHandler(
+		MessageServiceListMessageReactorsProcedure,
+		svc.ListMessageReactors,
+		connect.WithSchema(messageServiceMethods.ByName("ListMessageReactors")),
+		connect.WithHandlerOptions(opts...),
+	)
 	messageServiceSendMessageHandler := connect.NewUnaryHandler(
 		MessageServiceSendMessageProcedure,
 		svc.SendMessage,
@@ -616,6 +697,12 @@ func NewMessageServiceHandler(svc MessageServiceHandler, opts ...connect.Handler
 	)
 	return "/api.v1.MessageService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case MessageServiceSetMessageReactionProcedure:
+			messageServiceSetMessageReactionHandler.ServeHTTP(w, r)
+		case MessageServiceRemoveMessageReactionProcedure:
+			messageServiceRemoveMessageReactionHandler.ServeHTTP(w, r)
+		case MessageServiceListMessageReactorsProcedure:
+			messageServiceListMessageReactorsHandler.ServeHTTP(w, r)
 		case MessageServiceSendMessageProcedure:
 			messageServiceSendMessageHandler.ServeHTTP(w, r)
 		case MessageServiceEditMessageProcedure:
@@ -648,6 +735,18 @@ func NewMessageServiceHandler(svc MessageServiceHandler, opts ...connect.Handler
 
 // UnimplementedMessageServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedMessageServiceHandler struct{}
+
+func (UnimplementedMessageServiceHandler) SetMessageReaction(context.Context, *connect.Request[v1.SetMessageReactionRequest]) (*connect.Response[v1.SetMessageReactionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.MessageService.SetMessageReaction is not implemented"))
+}
+
+func (UnimplementedMessageServiceHandler) RemoveMessageReaction(context.Context, *connect.Request[v1.RemoveMessageReactionRequest]) (*connect.Response[v1.RemoveMessageReactionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.MessageService.RemoveMessageReaction is not implemented"))
+}
+
+func (UnimplementedMessageServiceHandler) ListMessageReactors(context.Context, *connect.Request[v1.ListMessageReactorsRequest]) (*connect.Response[v1.ListMessageReactorsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.MessageService.ListMessageReactors is not implemented"))
+}
 
 func (UnimplementedMessageServiceHandler) SendMessage(context.Context, *connect.Request[v1.SendMessageRequest]) (*connect.Response[v1.SendMessageResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("api.v1.MessageService.SendMessage is not implemented"))
