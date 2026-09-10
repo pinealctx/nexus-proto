@@ -3,6 +3,7 @@ package shared.v1;
 
 import "buf/validate/validate.proto";
 import "shared/v1/group_event.proto";
+import "shared/v1/reaction.proto";
 
 option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
 
@@ -363,6 +364,8 @@ message MessageEnvelope {
   // Echoed from SendMessageRequest.client_message_id.
   // Zero for system-generated messages (greetings, group events).
   int64 client_message_id = 10;
+  // Personalized reactions, populated on authenticated message queries.
+  MessageReactionView reactions = 11;
 }
 
 // RecalledContent replaces the original message body when a message is

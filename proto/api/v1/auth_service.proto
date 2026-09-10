@@ -3,6 +3,7 @@ package api.v1;
 
 import "api/v1/user_service.proto";
 import "buf/validate/validate.proto";
+import "shared/v1/reaction.proto";
 import "shared/v1/options.proto";
 import "shared/v1/user.proto";
 
@@ -463,6 +464,8 @@ message GetClientConfigResponse {
   GatewayEndpoints gateway = 1;
   // Login method configuration.
   LoginConfig login = 2;
+  // Emoji reaction catalog and limits.
+  shared.v1.ReactionConfig reactions = 3;
 }
 
 // LoginConfig describes which login methods are enabled on this server.

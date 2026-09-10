@@ -19,4 +19,6 @@ var (
 	ErrMessageTypeMismatch    = New(connect.CodeInvalidArgument, 6013, "MESSAGE_TYPE_MISMATCH")
 	ErrNotCardMessage         = New(connect.CodeFailedPrecondition, 6014, "NOT_CARD_MESSAGE")
 	ErrInvalidCardContent     = New(connect.CodeInvalidArgument, 6015, "INVALID_CARD_CONTENT")
+	ErrInvalidReaction        = New(connect.CodeInvalidArgument, 6016, "INVALID_REACTION")
+	ErrReactionLimit          = New(connect.CodeResourceExhausted, 6017, "REACTION_LIMIT")
 )

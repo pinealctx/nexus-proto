@@ -33,7 +33,7 @@ option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
 // Relationship to other services:
 //   - Adding an agent creates a conversation (type = AGENT) visible
 //     in ConversationService.ListConversations.
-//   - Adding an agent to a group is handled by GroupService.AddAgent.
+//   - Adding an agent to a group is handled by GroupService.InviteMembers.
 service AgentService {
   // ── Discovery ──
 

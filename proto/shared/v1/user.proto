@@ -31,9 +31,9 @@ enum DeviceType {
   DEVICE_TYPE_CLI = 5;
 }
 
-// PushPlatform defines push notification platforms.
-// Only APNs and FCM are supported in the current version.
-// Desktop clients (Tauri) rely on the in-app long connection.
+// PushPlatform defines push notification platform identifiers.
+// The current backend delivers FCM notifications for Android. APNs is
+// reserved for iOS integration; Desktop relies on the WebSocket connection.
 enum PushPlatform {
   // Unspecified.
   PUSH_PLATFORM_UNSPECIFIED = 0;

@@ -5,6 +5,7 @@ import "buf/validate/validate.proto";
 import "shared/v1/message.proto";
 import "shared/v1/options.proto";
 import "shared/v1/user.proto";
+import "shared/v1/reaction.proto";
 
 option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
 
@@ -15,6 +16,15 @@ option go_package = "github.com/pinealctx/nexus-proto/gen/go/api/v1;apiv1";
 // The long connection (WebSocket) is used exclusively for server-side
 // push delivery (new messages, status updates, etc.).
 service MessageService {
+  // SetMessageReaction idempotently adds the caller's emoji and emits SnUpdate.
+  // Fails for inaccessible, recalled or unsupported messages and exceeded limits.
+  rpc SetMessageReaction(SetMessageReactionRequest) returns (SetMessageReactionResponse);
+  // RemoveMessageReaction idempotently removes the caller's emoji and emits SnUpdate.
+  // Requires active conversation membership and message visibility.
+  rpc RemoveMessageReaction(RemoveMessageReactionRequest) returns (RemoveMessageReactionResponse);
+  // ListMessageReactors pages through users selecting an emoji by ascending user ID.
+  // Requires active conversation membership and message visibility. Does not mutate.
+  rpc ListMessageReactors(ListMessageReactorsRequest) returns (ListMessageReactorsResponse);
   // SendMessage sends a message to a conversation.
   //
   // Side effects:
@@ -185,6 +195,62 @@ service MessageService {
   rpc AnswerCardAction(AnswerCardActionRequest) returns (AnswerCardActionResponse) {
     option (shared.v1.agent_only) = true;
   }
+}
+
+// SetMessageReactionRequest identifies an explicit desired selection.
+message SetMessageReactionRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID within the conversation.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Canonical emoji from GetClientConfig.
+  string emoji = 3 [(buf.validate.field).string = {min_len: 1, max_bytes: 64}];
+}
+
+// SetMessageReactionResponse returns the caller's authoritative snapshot.
+message SetMessageReactionResponse {
+  // Updated or unchanged reaction state.
+  shared.v1.MessageReactionView reactions = 1;
+}
+
+// RemoveMessageReactionRequest identifies an explicit desired removal.
+message RemoveMessageReactionRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID within the conversation.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Emoji to remove.
+  string emoji = 3 [(buf.validate.field).string = {min_len: 1, max_bytes: 64}];
+}
+
+// RemoveMessageReactionResponse returns the caller's authoritative snapshot.
+message RemoveMessageReactionResponse {
+  // Updated or unchanged reaction state.
+  shared.v1.MessageReactionView reactions = 1;
+}
+
+// ListMessageReactorsRequest selects one emoji and a user ID cursor.
+message ListMessageReactorsRequest {
+  // Conversation ID.
+  int64 conversation_id = 1 [(buf.validate.field).int64.gt = 0];
+  // Message ID within the conversation.
+  int64 message_id = 2 [(buf.validate.field).int64.gt = 0];
+  // Emoji whose users are requested.
+  string emoji = 3 [(buf.validate.field).string = {min_len: 1, max_bytes: 64}];
+  // Exclusive user ID cursor; zero starts at the beginning.
+  int32 after_user_id = 4 [(buf.validate.field).int32.gte = 0];
+  // Page size; zero means 30.
+  int32 limit = 5 [(buf.validate.field).int32 = {gte: 0, lte: 100}];
+}
+
+// ListMessageReactorsResponse returns a stable user-ID-ordered page.
+message ListMessageReactorsResponse {
+  // Users in cursor order.
+  repeated shared.v1.UserInfo users = 1;
+  // Cursor to pass for the next page.
+  int32 next_user_id = 2;
+  // Whether more users were present at query time.
+  bool has_more = 3;
 }
 
 // ── Send ──

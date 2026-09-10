@@ -5,6 +5,7 @@ import "shared/v1/agent.proto";
 import "shared/v1/contact.proto";
 import "shared/v1/conversation.proto";
 import "shared/v1/message.proto";
+import "shared/v1/reaction.proto";
 
 option go_package = "github.com/pinealctx/nexus-proto/gen/go/shared/v1;sharedv1";
 
@@ -51,6 +52,8 @@ message SnUpdate {
     MessageDeletedEvent message_deleted = 18;
     // A contact was added directly (agent via AddContact).
     ContactAddedEvent contact_added = 19;
+    // Reaction state changed without creating a message or advancing unread.
+    MessageReactionsChangedEvent message_reactions_changed = 20;
   }
 }
 
